@@ -10,6 +10,7 @@ import { Panel } from "@/components/Panel";
 import { ButtonGhost } from "@/components/ButtonGhost";
 import { SignalLogger } from "@/components/SignalLogger";
 import { VoiceMarquee } from "@/components/voices/VoiceMarquee";
+import { PledgePanel } from "@/components/PledgePanel";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodayAggregate } from "@/hooks/useSignals";
 
@@ -71,6 +72,13 @@ const Index = () => {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-12">
             <SignalLogger />
+          </div>
+        </div>
+
+        {/* Pledge Panel */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-12">
+            <PledgePanel />
           </div>
         </div>
 

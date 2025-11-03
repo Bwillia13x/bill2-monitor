@@ -5,6 +5,7 @@ import { Panel } from "@/components/Panel";
 import { Button } from "@/components/ui/button";
 import { ButtonGhost } from "@/components/ButtonGhost";
 import { useTodayAggregate } from "@/hooks/useSignals";
+import { useCampaignSummary } from "@/hooks/usePledge";
 import { Download, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -13,12 +14,16 @@ const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
 
 const Press = () => {
   const { data: aggregateData } = useTodayAggregate();
+  const { data: pledgeSummary } = useCampaignSummary();
   const [showEmbed, setShowEmbed] = useState(false);
 
   const dsm = aggregateData?.avgDissatisfaction ?? 0;
   const totalSignals = aggregateData?.totalSignals ?? 0;
   const band = dsm >= 60 ? "Critical" : dsm >= 40 ? "Rising" : "Lower";
   const daysRemaining = Math.max(0, Math.ceil((TARGET_DATE.getTime() - Date.now()) / 86_400_000));
+  
+  const summary = pledgeSummary ?? { total: 0, today: 0, minShowN: 20 };
+  const canShowCounts = summary.total >= summary.minShowN;
 
   const embedCode = `<iframe src="${window.location.origin}/embed/meter" width="600" height="400" frameborder="0"></iframe>`;
 
@@ -171,6 +176,38 @@ const Press = () => {
                 </Button>
               </div>
             )}
+          </Panel>
+        </div>
+
+        {/* Pledge summary card */}
+        <div className="mb-8">
+          <Panel className="p-6">
+            <h2 className="text-xl font-semibold mb-6">Pledge Summary</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <div className="text-3xl font-bold text-primary">
+                  {canShowCounts ? summary.total.toLocaleString() : "—"}
+                </div>
+                <div className="text-sm text-muted-foreground">Total Signatures</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">
+                  {canShowCounts ? "All-time" : `Hidden until n≥${summary.minShowN}`}
+                </div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">
+                  {canShowCounts && summary.today > 0 ? summary.today : "—"}
+                </div>
+                <div className="text-sm text-muted-foreground">Today's Adds</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">
+                  {canShowCounts ? "New signatures" : "Gated"}
+                </div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">n≥20</div>
+                <div className="text-sm text-muted-foreground">Privacy Threshold</div>
+                <div className="text-xs text-muted-foreground/70 mt-1">All slices</div>
+              </div>
+            </div>
           </Panel>
         </div>
 

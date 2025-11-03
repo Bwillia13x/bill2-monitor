@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaigns: {
+        Row: {
+          active: boolean | null
+          close_date: string | null
+          created_at: string
+          id: string
+          key: string
+          min_show_n: number
+          open_date: string
+          statement: string
+        }
+        Insert: {
+          active?: boolean | null
+          close_date?: string | null
+          created_at?: string
+          id?: string
+          key: string
+          min_show_n?: number
+          open_date?: string
+          statement: string
+        }
+        Update: {
+          active?: boolean | null
+          close_date?: string | null
+          created_at?: string
+          id?: string
+          key?: string
+          min_show_n?: number
+          open_date?: string
+          statement?: string
+        }
+        Relationships: []
+      }
       micro_poll_responses: {
         Row: {
           created_at: string
@@ -99,6 +132,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pledge_signatures: {
+        Row: {
+          campaign_id: string
+          district: string | null
+          id: string
+          one_liner: string | null
+          signed_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          district?: string | null
+          id?: string
+          one_liner?: string | null
+          signed_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          district?: string | null
+          id?: string
+          one_liner?: string | null
+          signed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pledge_signatures_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -202,6 +270,22 @@ export type Database = {
       }
       get_approved_one_liners_count: { Args: never; Returns: number }
       get_approved_stories_count: { Args: never; Returns: number }
+      get_campaign_districts: {
+        Args: { c_key: string }
+        Returns: {
+          count: number
+          district: string
+        }[]
+      }
+      get_campaign_summary: {
+        Args: { c_key: string }
+        Returns: {
+          min_show_n: number
+          statement: string
+          today: number
+          total: number
+        }[]
+      }
       get_poll_aggregate: {
         Args: { poll_id_param: string }
         Returns: {
@@ -216,6 +300,7 @@ export type Database = {
           total_signals: number
         }[]
       }
+      has_user_signed: { Args: { c_key: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
