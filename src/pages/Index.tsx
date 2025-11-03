@@ -25,12 +25,12 @@ const Index = () => {
   const navigate = useNavigate();
   const { data: aggregateData } = useTodayAggregate();
   
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-    }
-  }, [user, navigate]);
+  // Redirect to auth if not logged in - TEMPORARILY DISABLED
+  // useEffect(() => {
+  //   if (!user) {
+  //     navigate("/auth");
+  //   }
+  // }, [user, navigate]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000); // refresh every minute
