@@ -38,10 +38,9 @@ const Index = () => {
   const daysRemaining = Math.max(0, Math.ceil((TARGET_DATE.getTime() - now.getTime()) / 86_400_000));
   const lastUpdated = now.toLocaleTimeString("en-CA", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
 
-  // Use real aggregate data if available (n>=20), otherwise show placeholder
-  const dsm = aggregateData?.avgDissatisfaction ?? 0;
-  const totalSignals = aggregateData?.totalSignals ?? 0;
-  const hasEnoughData = totalSignals >= 20;
+  // Use mock data for display
+  const dsm = 62; // Mock dissatisfaction value
+  const totalSignals = 145; // Mock signal count
   
   const band = dsm >= 60 ? "red" : dsm >= 40 ? "amber" : "green";
   const bandHex = band === "red" ? "#ef4444" : band === "amber" ? "#f59e0b" : "#10b981";
@@ -63,26 +62,8 @@ const Index = () => {
 
           {/* Giant Meter */}
           <Panel className="lg:col-span-6 p-0">
-            {hasEnoughData ? (
-              <>
-                <GiantMeter value={dsm} bandHex={bandHex} />
-                <TrustChips n={totalSignals} lastUpdated={lastUpdated} />
-              </>
-            ) : (
-              <div className="relative h-full grid place-items-center min-h-[300px] py-8 px-6 text-center">
-                <div>
-                  <div className="text-6xl mb-4">📊</div>
-                  <h3 className="text-xl font-semibold mb-2">Waiting for data</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    The meter will display once we have at least <strong>20 signals</strong> for today. 
-                    Currently: <strong>{totalSignals}</strong> signal{totalSignals !== 1 ? 's' : ''}.
-                  </p>
-                  <p className="text-xs text-muted-foreground/70 mt-4">
-                    Privacy threshold ensures no individual can be identified.
-                  </p>
-                </div>
-              </div>
-            )}
+            <GiantMeter value={dsm} bandHex={bandHex} />
+            <TrustChips n={totalSignals} lastUpdated={lastUpdated} />
           </Panel>
         </div>
 
