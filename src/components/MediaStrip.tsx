@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import sign30NotOk from "@/assets/sign-30-not-ok.png";
 import signEvidence from "@/assets/sign-evidence-not-coordination.png";
 import signClassSize from "@/assets/sign-count-class-size.png";
+import signDemands from "@/assets/sign-demands.png";
+import signTruth from "@/assets/sign-truth.png";
 
 type Item = { src: string; alt: string; href?: string; caption?: string };
 
@@ -9,6 +11,8 @@ const DEFAULT_ITEMS: Item[] = [
   { src: sign30NotOk, alt: "30 ≠ OK.", caption: "#ClassSize", href: "/studio/signs" },
   { src: signEvidence, alt: "Evidence, not coordination.", caption: "Press kit →", href: "/press" },
   { src: signClassSize, alt: "Count class size.", caption: "Add your voice →", href: "/voices" },
+  { src: signDemands, alt: "Our demands.", caption: "Join us →", href: "/voices" },
+  { src: signTruth, alt: "Tell the truth.", caption: "#TellTheTruth", href: "/studio/signs" },
 ];
 
 export function MediaStrip({
