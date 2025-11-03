@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'space': ['Space Grotesk', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -89,6 +92,14 @@ export default {
           "50%": { transform: "scale(1)", opacity: "0.5" },
           "100%": { transform: "scale(0.96)", opacity: "0.25" },
         },
+        "glow-pulse": {
+          "0%, 100%": { opacity: "0.4", filter: "blur(40px)" },
+          "50%": { opacity: "0.8", filter: "blur(50px)" },
+        },
+        "needle-enter": {
+          "0%": { transform: "rotate(0deg) translateY(-40%)", opacity: "0" },
+          "100%": { transform: "rotate(var(--needle-deg)) translateY(-40%)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -96,6 +107,8 @@ export default {
         "spin-slow": "spin-slow 10s linear infinite",
         "breathe": "breathe 4s ease-in-out infinite",
         "breathe-fast": "breathe 2.4s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 3s ease-in-out infinite",
+        "needle-enter": "needle-enter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
       },
     },
   },

@@ -47,6 +47,13 @@ All colors MUST be HSL.
     --warning-amber: 38 92% 50%;
     --success-green: 160 84% 39%;
 
+    /* Meter-specific tokens */
+    --meter-ring-bg: 217 33% 8%;
+    --meter-inner-glow: 0 0% 100% / 0.05;
+    --meter-tick-major: 0 0% 100% / 0.5;
+    --meter-tick-minor: 0 0% 100% / 0.15;
+    --meter-threshold: 0 0% 100% / 0.7;
+
     --sidebar-background: 0 0% 98%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
