@@ -301,6 +301,7 @@ export type Database = {
         }[]
       }
       has_user_signed: { Args: { c_key: string }; Returns: boolean }
+      validate_campaign_key: { Args: { c_key: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
