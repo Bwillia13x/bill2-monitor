@@ -84,11 +84,18 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        "breathe": {
+          "0%": { transform: "scale(0.96)", opacity: "0.25" },
+          "50%": { transform: "scale(1)", opacity: "0.5" },
+          "100%": { transform: "scale(0.96)", opacity: "0.25" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "spin-slow": "spin-slow 10s linear infinite",
+        "breathe": "breathe 4s ease-in-out infinite",
+        "breathe-fast": "breathe 2.4s ease-in-out infinite",
       },
     },
   },

@@ -41,7 +41,7 @@ const Index = () => {
 
   return (
     <div className="relative min-h-screen w-full text-foreground bg-background overflow-x-hidden">
-      <BackgroundFX />
+      <BackgroundFX band={band} />
 
       <Header />
       <Banner />
