@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Voices from "./pages/Voices";
+import SignStudio from "./pages/SignStudio";
+import Press from "./pages/Press";
+import Pulse from "./pages/Pulse";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +24,10 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/voices" element={<Voices />} />
+            <Route path="/studio/signs" element={<SignStudio />} />
+            <Route path="/press" element={<Press />} />
+            <Route path="/pulse" element={<Pulse />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

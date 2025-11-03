@@ -14,11 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      micro_poll_responses: {
+        Row: {
+          created_at: string
+          id: string
+          poll_id: string
+          response: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          poll_id: string
+          response: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          poll_id?: string
+          response?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "micro_poll_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "micro_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      micro_polls: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          id: string
+          poll_date: string
+          question: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          poll_date?: string
+          question: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          id?: string
+          poll_date?: string
+          question?: string
+        }
+        Relationships: []
+      }
+      one_liners: {
+        Row: {
+          approved: boolean | null
+          created_at: string
+          district: string | null
+          id: string
+          tags: string[] | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          tags?: string[] | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          tags?: string[] | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           full_name: string | null
           id: string
+          is_admin: boolean | null
           role: string | null
           school_district: string | null
           updated_at: string
@@ -28,6 +115,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           role?: string | null
           school_district?: string | null
           updated_at?: string
@@ -37,6 +125,7 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           role?: string | null
           school_district?: string | null
           updated_at?: string
@@ -68,6 +157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      stories: {
+        Row: {
+          approved: boolean | null
+          created_at: string
+          district: string | null
+          id: string
+          tags: string[] | null
+          text: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          tags?: string[] | null
+          text: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          tags?: string[] | null
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -79,6 +198,15 @@ export type Database = {
           avg_dissatisfaction: number
           signal_date: string
           total_signals: number
+        }[]
+      }
+      get_approved_one_liners_count: { Args: never; Returns: number }
+      get_approved_stories_count: { Args: never; Returns: number }
+      get_poll_aggregate: {
+        Args: { poll_id_param: string }
+        Returns: {
+          avg_response: number
+          total_responses: number
         }[]
       }
       get_today_aggregate: {

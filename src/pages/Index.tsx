@@ -9,6 +9,7 @@ import { TrustChips } from "@/components/TrustChips";
 import { Panel } from "@/components/Panel";
 import { ButtonGhost } from "@/components/ButtonGhost";
 import { SignalLogger } from "@/components/SignalLogger";
+import { VoiceMarquee } from "@/components/voices/VoiceMarquee";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodayAggregate } from "@/hooks/useSignals";
 
@@ -99,7 +100,13 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">
                 All signals are <span className="font-semibold text-foreground">anonymous</span> and aggregated. We never show slices with fewer than <b className="text-foreground">20</b> participants to protect individual privacy.
               </p>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 flex-wrap justify-center">
+                <a 
+                  href="/voices"
+                  className="rounded-xl bg-primary/20 hover:bg-primary/30 px-4 py-2 text-sm ring-1 ring-primary/30 transition-colors"
+                >
+                  View Voices
+                </a>
                 <a href="#methodology" className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2 text-sm ring-1 ring-border transition-colors">
                   Methodology
                 </a>
@@ -131,6 +138,8 @@ const Index = () => {
           <span>Evidence, not coordination. Privacy‑by‑design.</span>
         </div>
       </footer>
+
+      <VoiceMarquee />
     </div>
   );
 };
