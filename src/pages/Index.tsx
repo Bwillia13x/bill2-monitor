@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BackgroundFX } from "@/components/BackgroundFX";
 import { Header } from "@/components/Header";
 import { Banner } from "@/components/Banner";
@@ -7,6 +8,7 @@ import { GiantMeter } from "@/components/GiantMeter";
 import { TrustChips } from "@/components/TrustChips";
 import { Panel } from "@/components/Panel";
 import { ButtonGhost } from "@/components/ButtonGhost";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Set to midnight local (America/Edmonton) on Aug 31, 2028. 06:00Z ≈ 00:00 MT (DST-dependent).
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
@@ -14,7 +16,16 @@ const TZ = "America/Edmonton";
 
 const Index = () => {
   const [now, setNow] = useState(new Date());
+  const { user } = useAuth();
+  const navigate = useNavigate();
   
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000); // refresh every minute
     return () => clearInterval(t);

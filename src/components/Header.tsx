@@ -1,6 +1,11 @@
 import { Logo } from "./Logo";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function Header() {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="relative z-10">
       <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
@@ -11,9 +16,17 @@ export function Header() {
             <div className="text-[11px] text-muted-foreground/70">Lawful, privacy‑preserving educator sentiment</div>
           </div>
         </div>
-        <button className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2 text-sm ring-1 ring-border transition-colors">
-          Verify educator
-        </button>
+        {user && (
+          <Button
+            onClick={signOut}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <LogOut className="size-4" />
+            Sign Out
+          </Button>
+        )}
       </div>
     </header>
   );
