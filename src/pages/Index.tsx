@@ -11,6 +11,7 @@ import { ButtonGhost } from "@/components/ButtonGhost";
 import { SignalLogger } from "@/components/SignalLogger";
 import { VoiceMarquee } from "@/components/voices/VoiceMarquee";
 import { PledgePanel } from "@/components/PledgePanel";
+import { MediaStrip } from "@/components/MediaStrip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodayAggregate } from "@/hooks/useSignals";
 
@@ -52,6 +53,11 @@ const Index = () => {
 
       <Header />
       <Banner />
+
+      {/* Media Strip */}
+      <div className="pt-10">
+        <MediaStrip tone={band} speedSec={28} />
+      </div>
 
       {/* Hero: Countdown + Meter */}
       <main className="relative z-10 mx-auto max-w-7xl px-6 py-10">
