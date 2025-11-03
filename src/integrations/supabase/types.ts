@@ -44,12 +44,50 @@ export type Database = {
         }
         Relationships: []
       }
+      signals: {
+        Row: {
+          created_at: string
+          dissatisfaction_level: number
+          id: string
+          signal_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dissatisfaction_level: number
+          id?: string
+          signal_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dissatisfaction_level?: number
+          id?: string
+          signal_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_aggregate_dissatisfaction: {
+        Args: never
+        Returns: {
+          avg_dissatisfaction: number
+          signal_date: string
+          total_signals: number
+        }[]
+      }
+      get_today_aggregate: {
+        Args: never
+        Returns: {
+          avg_dissatisfaction: number
+          total_signals: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

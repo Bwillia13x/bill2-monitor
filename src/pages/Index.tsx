@@ -8,7 +8,9 @@ import { GiantMeter } from "@/components/GiantMeter";
 import { TrustChips } from "@/components/TrustChips";
 import { Panel } from "@/components/Panel";
 import { ButtonGhost } from "@/components/ButtonGhost";
+import { SignalLogger } from "@/components/SignalLogger";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTodayAggregate } from "@/hooks/useSignals";
 
 // Set to midnight local (America/Edmonton) on Aug 31, 2028. 06:00Z ≈ 00:00 MT (DST-dependent).
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
@@ -18,6 +20,7 @@ const Index = () => {
   const [now, setNow] = useState(new Date());
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { data: aggregateData } = useTodayAggregate();
   
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -34,8 +37,11 @@ const Index = () => {
   const daysRemaining = Math.max(0, Math.ceil((TARGET_DATE.getTime() - now.getTime()) / 86_400_000));
   const lastUpdated = now.toLocaleTimeString("en-CA", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
 
-  // Core signal (mock). Keep simple, visually striking.
-  const dsm = 62; // 0..100 dissatisfaction
+  // Use real aggregate data if available (n>=20), otherwise show placeholder
+  const dsm = aggregateData?.avgDissatisfaction ?? 0;
+  const totalSignals = aggregateData?.totalSignals ?? 0;
+  const hasEnoughData = totalSignals >= 20;
+  
   const band = dsm >= 60 ? "red" : dsm >= 40 ? "amber" : "green";
   const bandHex = band === "red" ? "#ef4444" : band === "amber" ? "#f59e0b" : "#10b981";
 
@@ -56,22 +62,44 @@ const Index = () => {
 
           {/* Giant Meter */}
           <Panel className="lg:col-span-6 p-0">
-            <GiantMeter value={dsm} bandHex={bandHex} />
-            <TrustChips n={2893} lastUpdated={lastUpdated} />
+            {hasEnoughData ? (
+              <>
+                <GiantMeter value={dsm} bandHex={bandHex} />
+                <TrustChips n={totalSignals} lastUpdated={lastUpdated} />
+              </>
+            ) : (
+              <div className="relative h-full grid place-items-center min-h-[300px] py-8 px-6 text-center">
+                <div>
+                  <div className="text-6xl mb-4">📊</div>
+                  <h3 className="text-xl font-semibold mb-2">Waiting for data</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    The meter will display once we have at least <strong>20 signals</strong> for today. 
+                    Currently: <strong>{totalSignals}</strong> signal{totalSignals !== 1 ? 's' : ''}.
+                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-4">
+                    Privacy threshold ensures no individual can be identified.
+                  </p>
+                </div>
+              </div>
+            )}
           </Panel>
         </div>
 
-        {/* Single CTA Row — minimal and clear */}
+        {/* Signal Logger */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-12">
+            <SignalLogger />
+          </div>
+        </div>
+
+        {/* CTA Row */}
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
           <Panel className="lg:col-span-12 p-6">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <p className="text-sm text-muted-foreground">
-                Verified educators can log a <span className="font-semibold text-foreground">daily signal</span> — anonymous, one per day. We publish only aggregate data and never show slices with fewer than <b className="text-foreground">20</b> participants.
+                All signals are <span className="font-semibold text-foreground">anonymous</span> and aggregated. We never show slices with fewer than <b className="text-foreground">20</b> participants to protect individual privacy.
               </p>
               <div className="flex items-center gap-3">
-                <button className="rounded-xl bg-primary/20 hover:bg-primary/30 text-primary-foreground px-4 py-2 ring-1 ring-primary/30 transition-colors">
-                  Log today's signal
-                </button>
                 <a href="#methodology" className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2 text-sm ring-1 ring-border transition-colors">
                   Methodology
                 </a>
