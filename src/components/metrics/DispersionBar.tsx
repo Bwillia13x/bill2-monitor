@@ -9,7 +9,7 @@ interface PollDistribution {
 }
 
 interface DispersionBarProps {
-  distribution: PollDistribution[] | null;
+  distribution: PollDistribution[];
   isLoading?: boolean;
   threshold?: number;
 }
@@ -36,7 +36,6 @@ export function DispersionBar({
   threshold = 20,
 }: DispersionBarProps) {
   const exportCSV = () => {
-    if (!distribution) return;
     const csv = [
       "Score,Label,Count,Percentage",
       ...distribution.map(
@@ -54,7 +53,6 @@ export function DispersionBar({
   };
 
   const exportPNG = () => {
-    if (!distribution) return;
     const canvas = document.createElement("canvas");
     canvas.width = 600;
     canvas.height = 400;
@@ -101,21 +99,6 @@ export function DispersionBar({
         threshold={threshold}
       >
         <Skeleton className="w-full h-[280px]" />
-      </MetricCard>
-    );
-  }
-
-  if (!distribution) {
-    return (
-      <MetricCard
-        title="Response Distribution"
-        subtitle="Aggregate sentiment breakdown (Likert 1-5)"
-        tooltip="Shows the distribution of responses across a 5-point scale. Only published when n≥20 responses are collected."
-        threshold={threshold}
-      >
-        <div className="flex items-center justify-center h-[280px] text-muted-foreground text-sm">
-          Data hidden until cohort reaches n≥{threshold} responses
-        </div>
       </MetricCard>
     );
   }

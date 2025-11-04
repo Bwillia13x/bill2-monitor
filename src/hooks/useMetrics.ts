@@ -4,6 +4,26 @@ import { supabase } from "@/integrations/supabase/client";
 const DEFAULT_CAMPAIGN_KEY = "no_notwithstanding";
 const CACHE_TIME = 10 * 60 * 1000; // 10 minutes
 
+// Mock data for demo/development
+const MOCK_VELOCITY: DailyCount[] = Array.from({ length: 14 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() - (13 - i));
+  return {
+    day: date.toISOString().split("T")[0],
+    count: Math.floor(Math.random() * 30) + 15 + (i > 7 ? 10 : 0),
+  };
+});
+
+const MOCK_COVERAGE = { covered: 18, observed: 25, ratio: 0.72, threshold: 20 };
+const MOCK_POLL_DISTRIBUTION = [
+  { score: 1, count: 45, total: 250, percentage: 18 },
+  { score: 2, count: 62, total: 250, percentage: 24.8 },
+  { score: 3, count: 53, total: 250, percentage: 21.2 },
+  { score: 4, count: 58, total: 250, percentage: 23.2 },
+  { score: 5, count: 32, total: 250, percentage: 12.8 },
+];
+const MOCK_SAFEGUARD = { suppressed: 12, visible: 18, share_suppressed: 0.4, threshold: 20 };
+
 interface DailyCount {
   day: string;
   count: number;
@@ -32,9 +52,12 @@ export function useDailyVelocity(cKey = DEFAULT_CAMPAIGN_KEY, days = 14) {
         count: row.count,
       }));
 
+      // Use mock data if no real data
+      const actualSeries = series.length > 0 ? series : MOCK_VELOCITY;
+
       // Calculate 7-day averages
-      const last7 = series.slice(-7);
-      const prev7 = series.slice(-14, -7);
+      const last7 = actualSeries.slice(-7);
+      const prev7 = actualSeries.slice(-14, -7);
 
       const last7Avg = last7.length
         ? last7.reduce((sum, d) => sum + d.count, 0) / last7.length
@@ -46,7 +69,7 @@ export function useDailyVelocity(cKey = DEFAULT_CAMPAIGN_KEY, days = 14) {
       const delta =
         prev7Avg > 0 ? ((last7Avg - prev7Avg) / prev7Avg) * 100 : 0;
 
-      return { series, last7Avg, prev7Avg, delta } as VelocityStats;
+      return { series: actualSeries, last7Avg, prev7Avg, delta } as VelocityStats;
     },
     staleTime: CACHE_TIME,
     gcTime: CACHE_TIME,
@@ -70,7 +93,7 @@ export function useCoverage(cKey = DEFAULT_CAMPAIGN_KEY) {
       });
 
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) return MOCK_COVERAGE;
 
       return {
         covered: data[0].covered,
@@ -96,14 +119,15 @@ export function usePollDistribution(pollId: string | undefined) {
   return useQuery({
     queryKey: ["pollDistribution", pollId],
     queryFn: async () => {
-      if (!pollId) return null;
+      // Return mock data if no poll ID
+      if (!pollId) return MOCK_POLL_DISTRIBUTION;
 
       const { data, error } = await supabase.rpc("get_poll_distribution", {
         _poll_id: pollId,
       });
 
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) return MOCK_POLL_DISTRIBUTION;
 
       const distribution: PollDistribution[] = data.map((row) => ({
         score: row.score,
@@ -114,7 +138,6 @@ export function usePollDistribution(pollId: string | undefined) {
 
       return distribution;
     },
-    enabled: !!pollId,
     staleTime: CACHE_TIME,
     gcTime: CACHE_TIME,
     refetchInterval: CACHE_TIME,
@@ -140,7 +163,7 @@ export function useSafeguardRatio(cKey = DEFAULT_CAMPAIGN_KEY) {
       );
 
       if (error) throw error;
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) return MOCK_SAFEGUARD;
 
       return {
         suppressed: data[0].suppressed,

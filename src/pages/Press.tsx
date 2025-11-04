@@ -127,31 +127,39 @@ const Press = () => {
         <div className="mb-8">
           <h2 className="text-2xl font-semibold mb-6">Press-Ready Analytics</h2>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <VelocitySparkline
-              series={velocityData?.series || []}
-              last7Avg={velocityData?.last7Avg || 0}
-              prev7Avg={velocityData?.prev7Avg || 0}
-              delta={velocityData?.delta || 0}
-              isLoading={velocityLoading}
-            />
-            <CoverageDial
-              covered={coverageData?.covered || 0}
-              observed={coverageData?.observed || 0}
-              ratio={coverageData?.ratio || 0}
-              threshold={coverageData?.threshold || 20}
-              isLoading={coverageLoading}
-            />
-            <DispersionBar
-              distribution={pollDistribution}
-              isLoading={pollLoading}
-            />
-            <SafeguardMeter
-              suppressed={safeguardData?.suppressed || 0}
-              visible={safeguardData?.visible || 0}
-              share_suppressed={safeguardData?.share_suppressed || 0}
-              threshold={safeguardData?.threshold || 20}
-              isLoading={safeguardLoading}
-            />
+            {velocityData && (
+              <VelocitySparkline
+                series={velocityData.series}
+                last7Avg={velocityData.last7Avg}
+                prev7Avg={velocityData.prev7Avg}
+                delta={velocityData.delta}
+                isLoading={velocityLoading}
+              />
+            )}
+            {coverageData && (
+              <CoverageDial
+                covered={coverageData.covered}
+                observed={coverageData.observed}
+                ratio={coverageData.ratio}
+                threshold={coverageData.threshold}
+                isLoading={coverageLoading}
+              />
+            )}
+            {pollDistribution && (
+              <DispersionBar
+                distribution={pollDistribution}
+                isLoading={pollLoading}
+              />
+            )}
+            {safeguardData && (
+              <SafeguardMeter
+                suppressed={safeguardData.suppressed}
+                visible={safeguardData.visible}
+                share_suppressed={safeguardData.share_suppressed}
+                threshold={safeguardData.threshold}
+                isLoading={safeguardLoading}
+              />
+            )}
           </div>
         </div>
 
