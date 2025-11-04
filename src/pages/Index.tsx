@@ -1,169 +1,176 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { BackgroundFX } from "@/components/BackgroundFX";
-import { Header } from "@/components/Header";
-import { Banner } from "@/components/Banner";
-import { Countdown } from "@/components/Countdown";
-import { GiantMeter } from "@/components/GiantMeter";
-import { TrustChips } from "@/components/TrustChips";
-import { Panel } from "@/components/Panel";
-import { ButtonGhost } from "@/components/ButtonGhost";
-import { SignalLogger } from "@/components/SignalLogger";
-import { VoiceMarquee } from "@/components/voices/VoiceMarquee";
-import { PledgePanel } from "@/components/PledgePanel";
-import { MediaStrip } from "@/components/MediaStrip";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTodayAggregate } from "@/hooks/useSignals";
-import { VelocitySparkline } from "@/components/metrics/VelocitySparkline";
-import { CoverageDial } from "@/components/metrics/CoverageDial";
-import { useDailyVelocity, useCoverage } from "@/hooks/useMetrics";
+import { useState } from "react";
+import { SocialMetaTags } from "@/components/v3/SocialMetaTags";
+import { V3HeroSimple } from "@/components/v3/V3HeroSimple";
+import { SubmitModal } from "@/components/v3/SubmitModal";
+import { ConfirmationWithProgress } from "@/components/v3/ConfirmationWithProgress";
+import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
+import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
+import { MethodologyModal } from "@/components/v3/MethodologyModal";
+import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
+import { toast } from "sonner";
 
-// Set to midnight local (America/Edmonton) on Aug 31, 2028. 06:00Z ≈ 00:00 MT (DST-dependent).
+// Mock data - in production this would come from the database
+const MOCK_METER_VALUE = 67;
+const MOCK_DELTA_7D = 2.3;
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
-const TZ = "America/Edmonton";
 
-const Index = () => {
-  const [now, setNow] = useState(new Date());
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const { data: aggregateData } = useTodayAggregate();
-  const { data: velocityData, isLoading: velocityLoading } = useDailyVelocity();
-  const { data: coverageData, isLoading: coverageLoading } = useCoverage();
-  
-  // Redirect to auth if not logged in - TEMPORARILY DISABLED
-  // useEffect(() => {
-  //   if (!user) {
-  //     navigate("/auth");
-  //   }
-  // }, [user, navigate]);
+const MOCK_DISTRICTS = [
+  { name: "Calgary 1", count: 45, unlocked: true, threshold: 20 },
+  { name: "Calgary 2", count: 38, unlocked: true, threshold: 20 },
+  { name: "Edmonton 1", count: 52, unlocked: true, threshold: 20 },
+  { name: "Edmonton 2", count: 41, unlocked: true, threshold: 20 },
+  { name: "Red Deer", count: 23, unlocked: true, threshold: 20 },
+  { name: "Lethbridge", count: 18, unlocked: false, threshold: 20 },
+  { name: "Medicine Hat", count: 15, unlocked: false, threshold: 20 },
+  { name: "Grande Prairie", count: 12, unlocked: false, threshold: 20 },
+  { name: "Fort McMurray", count: 8, unlocked: false, threshold: 20 },
+  { name: "Airdrie", count: 14, unlocked: false, threshold: 20 },
+  { name: "Spruce Grove", count: 11, unlocked: false, threshold: 20 },
+  { name: "Okotoks", count: 9, unlocked: false, threshold: 20 },
+];
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 60_000); // refresh every minute
-    return () => clearInterval(t);
-  }, []);
+const MOCK_VELOCITY = [12, 15, 18, 14, 16, 19, 17];
 
-  const daysRemaining = Math.max(0, Math.ceil((TARGET_DATE.getTime() - now.getTime()) / 86_400_000));
-  const lastUpdated = now.toLocaleTimeString("en-CA", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+export default function V3IndexRefined() {
+  const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [methodologyModalOpen, setMethodologyModalOpen] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [signalNumber, setSignalNumber] = useState(MOCK_METER_VALUE);
+  const [todayCount, setTodayCount] = useState(MOCK_VELOCITY[MOCK_VELOCITY.length - 1]);
 
-  // Use mock data for display
-  const dsm = 62; // Mock dissatisfaction value
-  const totalSignals = 145; // Mock signal count
-  
-  const band = dsm >= 60 ? "red" : dsm >= 40 ? "amber" : "green";
-  const bandHex = band === "red" ? "#ef4444" : band === "amber" ? "#f59e0b" : "#10b981";
+  const downloadPressTile = usePressTileDownload(
+    MOCK_METER_VALUE,
+    MOCK_DELTA_7D,
+    MOCK_DISTRICTS
+  );
+
+  const handleSubmit = (value: number, role?: string, region?: string) => {
+    console.log("Signal submitted:", { value, role, region });
+    
+    // Generate referral code (in production, this would come from backend)
+    const code = "DS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    setReferralCode(code);
+    
+    // Update counts
+    setSignalNumber(MOCK_METER_VALUE + 1);
+    setTodayCount(todayCount + 1);
+    
+    // Close submit modal
+    setSubmitModalOpen(false);
+    
+    // Show confirmation
+    setShowConfirmation(true);
+  };
+
+  const handleConfirmationComplete = () => {
+    setShowConfirmation(false);
+    setShareModalOpen(true);
+  };
+
+  const handleShareClick = () => {
+    // If user hasn't submitted yet, prompt them to submit first
+    if (!referralCode) {
+      toast.info("Add your signal first to get your personal referral link!");
+      setSubmitModalOpen(true);
+      return;
+    }
+    
+    setShareModalOpen(true);
+  };
+
+  const handlePressDownload = () => {
+    downloadPressTile();
+    toast.success("Press tile downloaded!");
+  };
+
+  const daysRemaining = Math.ceil((TARGET_DATE.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  const coveragePercent = Math.round(
+    (MOCK_DISTRICTS.filter(d => d.unlocked).length / MOCK_DISTRICTS.length) * 100
+  );
+
+  // Simulate user's district (in production, would be detected from IP or selected)
+  const userDistrict = MOCK_DISTRICTS.find(d => d.name === "Lethbridge");
 
   return (
-    <div className="relative min-h-screen w-full text-foreground bg-background overflow-x-hidden">
-      <BackgroundFX band={band} />
+    <>
+      <SocialMetaTags meterValue={MOCK_METER_VALUE} />
+      <div 
+        className="min-h-screen text-gray-100"
+        style={{
+          background: 'linear-gradient(to bottom, #0a0a0a 0%, #111827 50%, #0a0a0a 100%)',
+        }}
+      >
+        {/* Hero section */}
+        <V3HeroSimple
+          meterValue={MOCK_METER_VALUE}
+          delta7d={MOCK_DELTA_7D}
+          daysRemaining={daysRemaining}
+          onSubmitClick={() => setSubmitModalOpen(true)}
+          onShareClick={handleShareClick}
+          onMethodologyClick={() => setMethodologyModalOpen(true)}
+        />
 
-      <Header />
-      <Banner />
+        {/* Below-fold content */}
+        <BelowFoldSimple
+          districts={MOCK_DISTRICTS}
+          dailyVelocity={MOCK_VELOCITY}
+          coveragePercent={coveragePercent}
+          onDownloadPress={handlePressDownload}
+        />
 
-      {/* Media Strip */}
-      <div className="pt-10">
-        <MediaStrip tone={band} speedSec={28} />
+        {/* Modals */}
+        <SubmitModal
+          open={submitModalOpen}
+          onClose={() => setSubmitModalOpen(false)}
+          onSubmit={handleSubmit}
+        />
+
+        {showConfirmation && (
+          <ConfirmationWithProgress
+            signalNumber={signalNumber}
+            todayCount={todayCount}
+            userDistrict={userDistrict}
+            onComplete={handleConfirmationComplete}
+          />
+        )}
+
+        <ShareWith3Modal
+          open={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          meterValue={MOCK_METER_VALUE}
+          referralCode={referralCode || "DEMO-CODE"}
+        />
+
+        <MethodologyModal
+          open={methodologyModalOpen}
+          onClose={() => setMethodologyModalOpen(false)}
+        />
+
+        {/* Footer */}
+        <footer className="border-t border-gray-800 py-8 px-4">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
+            <div>
+              © 2024 Digital Strike. Evidence-based, non-coordinative, privacy-first.
+            </div>
+            <div className="flex gap-6">
+              <button
+                onClick={() => setMethodologyModalOpen(true)}
+                className="hover:text-gray-300 transition-colors"
+              >
+                Methodology & Privacy
+              </button>
+              <a href="/press" className="hover:text-gray-300 transition-colors">
+                Press
+              </a>
+              <a href="/v2" className="hover:text-gray-300 transition-colors">
+                Full Dashboard
+              </a>
+            </div>
+          </div>
+        </footer>
       </div>
-
-      {/* Hero: Countdown + Meter */}
-      <main className="relative z-10 mx-auto max-w-7xl px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Countdown Tile */}
-          <Panel className="lg:col-span-6 p-0 overflow-hidden">
-            <Countdown days={daysRemaining} target={TARGET_DATE} />
-          </Panel>
-
-          {/* Giant Meter */}
-          <Panel className="lg:col-span-6 p-0">
-            <GiantMeter value={dsm} bandHex={bandHex} />
-            <TrustChips n={totalSignals} lastUpdated={lastUpdated} />
-          </Panel>
-        </div>
-
-        {/* Metrics Row */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {velocityData && (
-            <VelocitySparkline
-              series={velocityData.series}
-              last7Avg={velocityData.last7Avg}
-              prev7Avg={velocityData.prev7Avg}
-              delta={velocityData.delta}
-              isLoading={velocityLoading}
-            />
-          )}
-          {coverageData && (
-            <CoverageDial
-              covered={coverageData.covered}
-              observed={coverageData.observed}
-              ratio={coverageData.ratio}
-              threshold={coverageData.threshold}
-              isLoading={coverageLoading}
-            />
-          )}
-        </div>
-
-        {/* Signal Logger */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-12">
-            <SignalLogger />
-          </div>
-        </div>
-
-        {/* Pledge Panel */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-12">
-            <PledgePanel />
-          </div>
-        </div>
-
-        {/* CTA Row */}
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <Panel className="lg:col-span-12 p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-muted-foreground">
-                All signals are <span className="font-semibold text-foreground">anonymous</span> and aggregated. We never show slices with fewer than <b className="text-foreground">20</b> participants to protect individual privacy.
-              </p>
-              <div className="flex items-center gap-3 flex-wrap justify-center">
-                <a 
-                  href="/voices"
-                  className="rounded-xl bg-primary/20 hover:bg-primary/30 px-4 py-2 text-sm ring-1 ring-primary/30 transition-colors"
-                >
-                  View Voices
-                </a>
-                <a href="#methodology" className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2 text-sm ring-1 ring-border transition-colors">
-                  Methodology
-                </a>
-                <a href="#privacy" className="rounded-xl bg-white/10 hover:bg-white/20 px-4 py-2 text-sm ring-1 ring-border transition-colors">
-                  Privacy
-                </a>
-              </div>
-            </div>
-          </Panel>
-        </div>
-
-        {/* Minimal press strip (for media pickup) */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <Panel className="lg:col-span-12 p-6">
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="text-muted-foreground">Press assets:</span>
-              <ButtonGhost>PNG chart</ButtonGhost>
-              <ButtonGhost>SVG chart</ButtonGhost>
-              <ButtonGhost>CSV (30d)</ButtonGhost>
-              <ButtonGhost>Embed live meter</ButtonGhost>
-            </div>
-          </Panel>
-        </div>
-      </main>
-
-      <footer className="relative z-10 border-t border-border">
-        <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>© {new Date().getFullYear()} Digital Strike.</span>
-          <span>Evidence, not coordination. Privacy‑by‑design.</span>
-        </div>
-      </footer>
-
-      <VoiceMarquee />
-    </div>
+    </>
   );
-};
-
-export default Index;
+}

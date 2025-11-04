@@ -65,6 +65,14 @@ const Press = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Download assets, embed live data, and access factual information about educator sentiment.
           </p>
+          <div className="mt-6">
+            <a 
+              href="/engage?tab=press" 
+              className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+            >
+              View Enhanced Press Kit with Media Quotes & Data Access →
+            </a>
+          </div>
         </div>
 
         {/* Advisory banner if critical for 3 days */}

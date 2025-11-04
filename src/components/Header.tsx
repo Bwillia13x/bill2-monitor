@@ -8,6 +8,7 @@ import { useState } from "react";
 const NAV_LINKS = [
   { to: "/", label: "Meter" },
   { to: "/voices", label: "Voices" },
+  { to: "/engage", label: "Engage" },
   { to: "/pulse", label: "Pulse" },
   { to: "/studio/signs", label: "Signs" },
   { to: "/press", label: "Press" },

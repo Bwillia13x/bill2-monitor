@@ -1,22 +1,26 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { HelmetProvider } from "react-helmet-async";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
+import V2Index from "./pages/V2Index";
 import Auth from "./pages/Auth";
 import Voices from "./pages/Voices";
 import SignStudio from "./pages/SignStudio";
 import Press from "./pages/Press";
 import Pulse from "./pages/Pulse";
+import Engage from "./pages/Engage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+    <HelmetProvider>
+      <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -28,12 +32,15 @@ const App = () => (
             <Route path="/studio/signs" element={<SignStudio />} />
             <Route path="/press" element={<Press />} />
             <Route path="/pulse" element={<Pulse />} />
+            <Route path="/engage" element={<Engage />} />
+            <Route path="/v2" element={<V2Index />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 
