@@ -6,16 +6,33 @@ import { Button } from "@/components/ui/button";
 import { ButtonGhost } from "@/components/ButtonGhost";
 import { useTodayAggregate } from "@/hooks/useSignals";
 import { useCampaignSummary } from "@/hooks/usePledge";
+import { useTodayPoll } from "@/hooks/useMicroPoll";
 import { Download, Code } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import { VelocitySparkline } from "@/components/metrics/VelocitySparkline";
+import { CoverageDial } from "@/components/metrics/CoverageDial";
+import { DispersionBar } from "@/components/metrics/DispersionBar";
+import { SafeguardMeter } from "@/components/metrics/SafeguardMeter";
+import {
+  useDailyVelocity,
+  useCoverage,
+  usePollDistribution,
+  useSafeguardRatio,
+} from "@/hooks/useMetrics";
 
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
 
 const Press = () => {
   const { data: aggregateData } = useTodayAggregate();
   const { data: pledgeSummary } = useCampaignSummary();
+  const { data: todayPoll } = useTodayPoll();
   const [showEmbed, setShowEmbed] = useState(false);
+
+  const { data: velocityData, isLoading: velocityLoading } = useDailyVelocity();
+  const { data: coverageData, isLoading: coverageLoading } = useCoverage();
+  const { data: pollDistribution, isLoading: pollLoading } = usePollDistribution(todayPoll?.id);
+  const { data: safeguardData, isLoading: safeguardLoading } = useSafeguardRatio();
 
   const dsm = aggregateData?.avgDissatisfaction ?? 0;
   const totalSignals = aggregateData?.totalSignals ?? 0;
@@ -104,6 +121,38 @@ const Press = () => {
               </div>
             </div>
           </Panel>
+        </div>
+
+        {/* Privacy-Preserving Charts */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-6">Press-Ready Analytics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <VelocitySparkline
+              series={velocityData?.series || []}
+              last7Avg={velocityData?.last7Avg || 0}
+              prev7Avg={velocityData?.prev7Avg || 0}
+              delta={velocityData?.delta || 0}
+              isLoading={velocityLoading}
+            />
+            <CoverageDial
+              covered={coverageData?.covered || 0}
+              observed={coverageData?.observed || 0}
+              ratio={coverageData?.ratio || 0}
+              threshold={coverageData?.threshold || 20}
+              isLoading={coverageLoading}
+            />
+            <DispersionBar
+              distribution={pollDistribution}
+              isLoading={pollLoading}
+            />
+            <SafeguardMeter
+              suppressed={safeguardData?.suppressed || 0}
+              visible={safeguardData?.visible || 0}
+              share_suppressed={safeguardData?.share_suppressed || 0}
+              threshold={safeguardData?.threshold || 20}
+              isLoading={safeguardLoading}
+            />
+          </div>
         </div>
 
         {/* Downloadables */}

@@ -14,6 +14,9 @@ import { PledgePanel } from "@/components/PledgePanel";
 import { MediaStrip } from "@/components/MediaStrip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodayAggregate } from "@/hooks/useSignals";
+import { VelocitySparkline } from "@/components/metrics/VelocitySparkline";
+import { CoverageDial } from "@/components/metrics/CoverageDial";
+import { useDailyVelocity, useCoverage } from "@/hooks/useMetrics";
 
 // Set to midnight local (America/Edmonton) on Aug 31, 2028. 06:00Z ≈ 00:00 MT (DST-dependent).
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
@@ -24,6 +27,8 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: aggregateData } = useTodayAggregate();
+  const { data: velocityData, isLoading: velocityLoading } = useDailyVelocity();
+  const { data: coverageData, isLoading: coverageLoading } = useCoverage();
   
   // Redirect to auth if not logged in - TEMPORARILY DISABLED
   // useEffect(() => {
@@ -72,6 +77,24 @@ const Index = () => {
             <GiantMeter value={dsm} bandHex={bandHex} />
             <TrustChips n={totalSignals} lastUpdated={lastUpdated} />
           </Panel>
+        </div>
+
+        {/* Metrics Row */}
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <VelocitySparkline
+            series={velocityData?.series || []}
+            last7Avg={velocityData?.last7Avg || 0}
+            prev7Avg={velocityData?.prev7Avg || 0}
+            delta={velocityData?.delta || 0}
+            isLoading={velocityLoading}
+          />
+          <CoverageDial
+            covered={coverageData?.covered || 0}
+            observed={coverageData?.observed || 0}
+            ratio={coverageData?.ratio || 0}
+            threshold={coverageData?.threshold || 20}
+            isLoading={coverageLoading}
+          />
         </div>
 
         {/* Signal Logger */}

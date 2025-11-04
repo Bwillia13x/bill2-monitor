@@ -288,6 +288,22 @@ export type Database = {
       }
       get_approved_one_liners_count: { Args: never; Returns: number }
       get_approved_stories_count: { Args: never; Returns: number }
+      get_campaign_coverage: {
+        Args: { c_key: string }
+        Returns: {
+          covered: number
+          observed: number
+          ratio: number
+          threshold: number
+        }[]
+      }
+      get_campaign_daily_counts: {
+        Args: { c_key: string; days?: number }
+        Returns: {
+          count: number
+          day: string
+        }[]
+      }
       get_campaign_districts: {
         Args: { c_key: string }
         Returns: {
@@ -309,6 +325,23 @@ export type Database = {
         Returns: {
           avg_response: number
           total_responses: number
+        }[]
+      }
+      get_poll_distribution: {
+        Args: { _poll_id: string; min_n?: number }
+        Returns: {
+          count: number
+          score: number
+          total: number
+        }[]
+      }
+      get_privacy_safeguard_ratio: {
+        Args: { c_key: string }
+        Returns: {
+          share_suppressed: number
+          suppressed: number
+          threshold: number
+          visible: number
         }[]
       }
       get_today_aggregate: {
