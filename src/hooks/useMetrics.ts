@@ -24,6 +24,25 @@ const MOCK_POLL_DISTRIBUTION = [
 ];
 const MOCK_SAFEGUARD = { suppressed: 12, visible: 18, share_suppressed: 0.4, threshold: 20 };
 
+// Mock CCI data (diffusion index 0-100, 50 = neutral)
+const MOCK_CCI = {
+  cci: 47.6,
+  p_better: 0.18,
+  p_same: 0.41,
+  p_worse: 0.41,
+  total_n: 1284,
+  sat_mean: 4.9,
+  exh_mean: 7.1,
+  cci_change_1d: -0.9,
+  last_updated: new Date().toISOString(),
+};
+
+const MOCK_CCI_SPARKLINE = Array.from({ length: 7 }, (_, i) => ({
+  day: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  cci: 48 + Math.random() * 4 - 2,
+  n: 180 + Math.floor(Math.random() * 40),
+}));
+
 interface DailyCount {
   day: string;
   count: number;
@@ -171,6 +190,79 @@ export function useSafeguardRatio(cKey = DEFAULT_CAMPAIGN_KEY) {
         share_suppressed: Number(data[0].share_suppressed),
         threshold: data[0].threshold,
       } as SafeguardData;
+    },
+    staleTime: CACHE_TIME,
+    gcTime: CACHE_TIME,
+    refetchInterval: CACHE_TIME,
+  });
+}
+
+// CCI (Diffusion Index) Types
+interface CCIData {
+  cci: number;
+  p_better: number;
+  p_same: number;
+  p_worse: number;
+  total_n: number;
+  sat_mean: number;
+  exh_mean: number;
+  cci_change_1d: number | null;
+  last_updated: string;
+}
+
+interface CCISparklinePoint {
+  day: string;
+  cci: number;
+  n: number;
+}
+
+// Get CCI aggregate (diffusion index 0-100, 50 = neutral)
+export function useCCI(daysBack = 7) {
+  return useQuery({
+    queryKey: ["cci", daysBack],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_cci_aggregate", {
+        days_back: daysBack,
+      });
+
+      if (error) throw error;
+      if (!data || data.length === 0) return MOCK_CCI;
+
+      return {
+        cci: Number(data[0].cci),
+        p_better: Number(data[0].p_better),
+        p_same: Number(data[0].p_same),
+        p_worse: Number(data[0].p_worse),
+        total_n: data[0].total_n,
+        sat_mean: Number(data[0].sat_mean),
+        exh_mean: Number(data[0].exh_mean),
+        cci_change_1d: data[0].cci_change_1d ? Number(data[0].cci_change_1d) : null,
+        last_updated: data[0].last_updated,
+      } as CCIData;
+    },
+    staleTime: CACHE_TIME,
+    gcTime: CACHE_TIME,
+    refetchInterval: CACHE_TIME,
+  });
+}
+
+// Get CCI daily trend for sparkline
+export function useCCISparkline(days = 14) {
+  return useQuery({
+    queryKey: ["cciSparkline", days],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_cci_daily_trend", {
+        days,
+      });
+
+      if (error) throw error;
+      if (!data || data.length === 0) return MOCK_CCI_SPARKLINE;
+
+      return data.map((row) => ({
+        day: row.day,
+        cci: Number(row.cci),
+        n: row.n,
+      })) as CCISparklinePoint[];
     },
     staleTime: CACHE_TIME,
     gcTime: CACHE_TIME,

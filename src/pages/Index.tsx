@@ -7,11 +7,10 @@ import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
 import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
 import { MethodologyModal } from "@/components/v3/MethodologyModal";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
+import { useCCI } from "@/hooks/useMetrics";
 import { toast } from "sonner";
 
 // Mock data - in production this would come from the database
-const MOCK_METER_VALUE = 67;
-const MOCK_DELTA_7D = 2.3;
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
 
 const MOCK_DISTRICTS = [
@@ -37,12 +36,21 @@ export default function V3IndexRefined() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [methodologyModalOpen, setMethodologyModalOpen] = useState(false);
   const [referralCode, setReferralCode] = useState("");
-  const [signalNumber, setSignalNumber] = useState(MOCK_METER_VALUE);
+
+  // Fetch CCI data
+  const { data: cciData, isLoading: cciLoading } = useCCI(7);
+  
+  // Use CCI data or defaults
+  const cciValue = cciData?.cci ?? 47.6;
+  const cciChange = cciData?.cci_change_1d ?? null;
+  const totalN = cciData?.total_n ?? 1284;
+
+  const [signalNumber, setSignalNumber] = useState(totalN);
   const [todayCount, setTodayCount] = useState(MOCK_VELOCITY[MOCK_VELOCITY.length - 1]);
 
   const downloadPressTile = usePressTileDownload(
-    MOCK_METER_VALUE,
-    MOCK_DELTA_7D,
+    cciValue,
+    cciChange ?? 0,
     MOCK_DISTRICTS
   );
 
@@ -54,7 +62,7 @@ export default function V3IndexRefined() {
     setReferralCode(code);
     
     // Update counts
-    setSignalNumber(MOCK_METER_VALUE + 1);
+    setSignalNumber(totalN + 1);
     setTodayCount(todayCount + 1);
     
     // Close submit modal
@@ -95,7 +103,7 @@ export default function V3IndexRefined() {
 
   return (
     <>
-      <SocialMetaTags meterValue={MOCK_METER_VALUE} />
+      <SocialMetaTags meterValue={cciValue} />
       <div 
         className="min-h-screen text-gray-100"
         style={{
@@ -104,8 +112,9 @@ export default function V3IndexRefined() {
       >
         {/* Hero section */}
         <V3HeroSimple
-          meterValue={MOCK_METER_VALUE}
-          delta7d={MOCK_DELTA_7D}
+          cciValue={cciValue}
+          cciChange={cciChange}
+          totalN={totalN}
           daysRemaining={daysRemaining}
           onSubmitClick={() => setSubmitModalOpen(true)}
           onShareClick={handleShareClick}
@@ -139,7 +148,7 @@ export default function V3IndexRefined() {
         <ShareWith3Modal
           open={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
-          meterValue={MOCK_METER_VALUE}
+          meterValue={cciValue}
           referralCode={referralCode || "DEMO-CODE"}
         />
 

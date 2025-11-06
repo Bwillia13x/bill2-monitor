@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Shield, Share2, TrendingUp, Info } from "lucide-react";
+import { Shield, Share2, TrendingUp, TrendingDown, Info } from "lucide-react";
 
 interface V3HeroSimpleProps {
-  meterValue: number;
-  delta7d: number;
+  cciValue: number;
+  cciChange?: number | null;
+  totalN: number;
   daysRemaining: number;
   onSubmitClick: () => void;
   onShareClick: () => void;
@@ -11,13 +12,25 @@ interface V3HeroSimpleProps {
 }
 
 export function V3HeroSimple({
-  meterValue,
-  delta7d,
+  cciValue,
+  cciChange,
+  totalN,
   daysRemaining,
   onSubmitClick,
   onShareClick,
   onMethodologyClick,
 }: V3HeroSimpleProps) {
+  const getCCIColor = (cci: number) => {
+    if (cci >= 60) return "#3b82f6"; // blue (positive)
+    if (cci >= 40) return "#f59e0b"; // amber (neutral)
+    return "#ef4444"; // red (negative)
+  };
+
+  const getCCILabel = (cci: number) => {
+    if (cci >= 60) return "Conditions improving";
+    if (cci >= 40) return "Conditions stable";
+    return "Conditions worsening";
+  };
   return (
     <section 
       className="min-h-screen flex flex-col justify-center px-4 py-12"
@@ -26,7 +39,7 @@ export function V3HeroSimple({
       <div className="max-w-2xl mx-auto w-full text-center">
         {/* Title */}
         <h1 className="text-2xl md:text-3xl font-semibold text-gray-300 mb-8">
-          Digital Strike Meter
+          Classroom Conditions Index (CCI)
         </h1>
 
         {/* Big Number */}
@@ -34,29 +47,43 @@ export function V3HeroSimple({
           <div 
             className="text-8xl md:text-9xl font-bold tabular-nums mb-2"
             style={{
-              background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+              background: `linear-gradient(135deg, ${getCCIColor(cciValue)} 0%, ${getCCIColor(cciValue)}dd 100%)`,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
-              filter: 'drop-shadow(0 0 30px rgba(59, 130, 246, 0.4))',
+              filter: `drop-shadow(0 0 30px ${getCCIColor(cciValue)}66)`,
             }}
-            aria-label={`${meterValue} dissatisfaction signals`}
+            aria-label={`CCI ${cciValue.toFixed(1)} out of 100`}
           >
-            {meterValue}
+            {cciValue.toFixed(1)}
           </div>
 
           {/* Delta */}
           <div className="flex items-center justify-center gap-2 text-xl text-gray-400">
-            <TrendingUp className="w-5 h-5 text-blue-400" aria-hidden="true" />
-            <span className="text-blue-400 font-semibold">+{delta7d.toFixed(1)}</span>
-            <span>7-day avg</span>
+            {cciChange !== null && cciChange !== undefined && (
+              <>
+                {cciChange >= 0 ? (
+                  <TrendingUp className="w-5 h-5 text-blue-400" aria-hidden="true" />
+                ) : (
+                  <TrendingDown className="w-5 h-5 text-red-400" aria-hidden="true" />
+                )}
+                <span className={cciChange >= 0 ? "text-blue-400 font-semibold" : "text-red-400 font-semibold"}>
+                  {cciChange >= 0 ? '+' : ''}{cciChange.toFixed(1)}
+                </span>
+                <span>vs yesterday</span>
+              </>
+            )}
           </div>
+
+          {/* CCI Label */}
+          <p className="text-sm text-gray-500 mt-2">{getCCILabel(cciValue)}</p>
+          <p className="text-xs text-gray-600 mt-1">n = {totalN.toLocaleString()}</p>
         </div>
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-xl mx-auto">
-          Alberta Educator Dissatisfaction <br className="hidden sm:inline" />
-          (Anonymous, Real-Time)
+          Alberta Educator Sentiment <br className="hidden sm:inline" />
+          (Diffusion Index: 0–100, 50 = neutral)
         </p>
 
         {/* Microcopy row */}

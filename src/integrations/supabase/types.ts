@@ -47,6 +47,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cci_submissions: {
+        Row: {
+          created_at: string
+          district: string | null
+          exhaustion_10: number
+          id: string
+          role: string | null
+          satisfaction_10: number
+          submission_date: string
+          tenure: string | null
+          user_id: string
+          weekly_comparison: string
+        }
+        Insert: {
+          created_at?: string
+          district?: string | null
+          exhaustion_10: number
+          id?: string
+          role?: string | null
+          satisfaction_10: number
+          submission_date?: string
+          tenure?: string | null
+          user_id: string
+          weekly_comparison: string
+        }
+        Update: {
+          created_at?: string
+          district?: string | null
+          exhaustion_10?: number
+          id?: string
+          role?: string | null
+          satisfaction_10?: number
+          submission_date?: string
+          tenure?: string | null
+          user_id?: string
+          weekly_comparison?: string
+        }
+        Relationships: []
+      }
       micro_poll_responses: {
         Row: {
           created_at: string
@@ -318,6 +357,28 @@ export type Database = {
           statement: string
           today: number
           total: number
+        }[]
+      }
+      get_cci_aggregate: {
+        Args: { days_back?: number; min_n?: number }
+        Returns: {
+          cci: number
+          cci_change_1d: number
+          exh_mean: number
+          last_updated: string
+          p_better: number
+          p_same: number
+          p_worse: number
+          sat_mean: number
+          total_n: number
+        }[]
+      }
+      get_cci_daily_trend: {
+        Args: { days?: number; min_n?: number }
+        Returns: {
+          cci: number
+          day: string
+          n: number
         }[]
       }
       get_poll_aggregate: {
