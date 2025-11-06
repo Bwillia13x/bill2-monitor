@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SocialMetaTags } from "@/components/v3/SocialMetaTags";
 import { V3HeroSimple } from "@/components/v3/V3HeroSimple";
+import { CCIBulletGraphs } from "@/components/v3/CCIBulletGraphs";
 import { SubmitModal } from "@/components/v3/SubmitModal";
 import { ConfirmationWithProgress } from "@/components/v3/ConfirmationWithProgress";
 import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
@@ -161,6 +162,13 @@ export default function V3IndexRefined() {
           onSubmitClick={() => setSubmitModalOpen(true)}
           onShareClick={handleShareClick}
           onMethodologyClick={() => setMethodologyModalOpen(true)}
+        />
+
+        {/* CCI Component Bullet Graphs */}
+        <CCIBulletGraphs
+          satisfaction={cciData?.sat_mean ?? 4.9}
+          exhaustion={cciData?.exh_mean ?? 7.1}
+          totalN={totalN}
         />
 
         {/* Below-fold content */}
