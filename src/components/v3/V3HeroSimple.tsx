@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Shield, Share2, TrendingUp, TrendingDown, Info } from "lucide-react";
+import { CCISparkline } from "./CCISparkline";
 
 interface V3HeroSimpleProps {
   cciValue: number;
   cciChange?: number | null;
   totalN: number;
+  sparklineData?: Array<{ day: string; cci: number; n: number }>;
   daysRemaining: number;
   onSubmitClick: () => void;
   onShareClick: () => void;
@@ -15,6 +17,7 @@ export function V3HeroSimple({
   cciValue,
   cciChange,
   totalN,
+  sparklineData,
   daysRemaining,
   onSubmitClick,
   onShareClick,
@@ -79,6 +82,13 @@ export function V3HeroSimple({
           <p className="text-sm text-gray-500 mt-2">{getCCILabel(cciValue)}</p>
           <p className="text-xs text-gray-600 mt-1">n = {totalN.toLocaleString()}</p>
         </div>
+
+        {/* 7-day Sparkline */}
+        {sparklineData && sparklineData.length > 0 && (
+          <div className="mb-6">
+            <CCISparkline data={sparklineData} width={320} height={80} showAxis={true} />
+          </div>
+        )}
 
         {/* Subtitle */}
         <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-xl mx-auto">

@@ -7,7 +7,7 @@ import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
 import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
 import { MethodologyModal } from "@/components/v3/MethodologyModal";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
-import { useCCI } from "@/hooks/useMetrics";
+import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -40,6 +40,7 @@ export default function V3IndexRefined() {
 
   // Fetch CCI data
   const { data: cciData, isLoading: cciLoading } = useCCI(7);
+  const { data: sparklineData, isLoading: sparklineLoading } = useCCISparkline(7);
   
   // Use CCI data or defaults
   const cciValue = cciData?.cci ?? 47.6;
@@ -155,6 +156,7 @@ export default function V3IndexRefined() {
           cciValue={cciValue}
           cciChange={cciChange}
           totalN={totalN}
+          sparklineData={sparklineData}
           daysRemaining={daysRemaining}
           onSubmitClick={() => setSubmitModalOpen(true)}
           onShareClick={handleShareClick}
