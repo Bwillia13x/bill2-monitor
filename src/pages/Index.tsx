@@ -8,6 +8,7 @@ import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
 import { MethodologyModal } from "@/components/v3/MethodologyModal";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI } from "@/hooks/useMetrics";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 // Mock data - in production this would come from the database
@@ -54,22 +55,61 @@ export default function V3IndexRefined() {
     MOCK_DISTRICTS
   );
 
-  const handleSubmit = (value: number, role?: string, region?: string) => {
-    console.log("Signal submitted:", { value, role, region });
-    
-    // Generate referral code (in production, this would come from backend)
-    const code = "DS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    setReferralCode(code);
-    
-    // Update counts
-    setSignalNumber(totalN + 1);
-    setTodayCount(todayCount + 1);
-    
-    // Close submit modal
-    setSubmitModalOpen(false);
-    
-    // Show confirmation
-    setShowConfirmation(true);
+  const handleSubmit = async (data: {
+    weeklyComparison: 'better' | 'same' | 'worse';
+    satisfaction: number;
+    exhaustion: number;
+    role?: string;
+    district?: string;
+  }) => {
+    try {
+      // Since auth is disabled, use a temporary user ID
+      // In production, this would be auth.uid()
+      const tempUserId = localStorage.getItem('temp_user_id') || 
+        (() => {
+          const id = crypto.randomUUID();
+          localStorage.setItem('temp_user_id', id);
+          return id;
+        })();
+
+      const { error } = await supabase
+        .from('cci_submissions')
+        .insert({
+          user_id: tempUserId,
+          weekly_comparison: data.weeklyComparison,
+          satisfaction_10: data.satisfaction,
+          exhaustion_10: data.exhaustion,
+          role: data.role,
+          district: data.district,
+        });
+
+      if (error) {
+        console.error("Submission error:", error);
+        toast.error("Failed to submit. Please try again.");
+        return;
+      }
+
+      console.log("CCI submission successful:", data);
+      
+      // Generate referral code
+      const code = "CCI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      setReferralCode(code);
+      
+      // Update counts
+      setSignalNumber(totalN + 1);
+      setTodayCount(todayCount + 1);
+      
+      // Close submit modal
+      setSubmitModalOpen(false);
+      
+      // Show confirmation
+      setShowConfirmation(true);
+      
+      toast.success("Your signal has been recorded!");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   const handleConfirmationComplete = () => {

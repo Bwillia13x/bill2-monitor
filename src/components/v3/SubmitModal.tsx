@@ -3,37 +3,56 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Shield, Lock } from "lucide-react";
+import { Shield, Lock, TrendingUp, Minus, TrendingDown } from "lucide-react";
+
+type WeeklyComparison = 'better' | 'same' | 'worse';
 
 interface SubmitModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (value: number, role?: string, region?: string) => void;
+  onSubmit: (data: {
+    weeklyComparison: WeeklyComparison;
+    satisfaction: number;
+    exhaustion: number;
+    role?: string;
+    district?: string;
+  }) => void;
 }
 
 export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
-  const [sliderValue, setSliderValue] = useState([50]);
+  const [weeklyComparison, setWeeklyComparison] = useState<WeeklyComparison>('same');
+  const [satisfaction, setSatisfaction] = useState([5]);
+  const [exhaustion, setExhaustion] = useState([5]);
   const [role, setRole] = useState<string>();
-  const [region, setRegion] = useState<string>();
+  const [district, setDistrict] = useState<string>();
 
   const handleSubmit = () => {
-    onSubmit(sliderValue[0], role, region);
+    onSubmit({
+      weeklyComparison,
+      satisfaction: satisfaction[0],
+      exhaustion: exhaustion[0],
+      role,
+      district,
+    });
   };
 
-  const getSliderLabel = (value: number) => {
-    if (value === 0) return "No dissatisfaction";
-    if (value <= 20) return "Minimal concern";
-    if (value <= 40) return "Some concern";
-    if (value <= 60) return "Significant concern";
-    if (value <= 80) return "High dissatisfaction";
-    if (value < 100) return "Severe dissatisfaction";
-    return "Maximum dissatisfaction";
+  const getComparisonColor = (comparison: WeeklyComparison) => {
+    if (comparison === 'better') return 'border-blue-500 bg-blue-500/10';
+    if (comparison === 'worse') return 'border-red-500 bg-red-500/10';
+    return 'border-amber-500 bg-amber-500/10';
   };
 
-  const getSliderColor = (value: number) => {
-    if (value <= 33) return "#3b82f6"; // blue
-    if (value <= 66) return "#f59e0b"; // amber
-    return "#ef4444"; // red
+  const getScaleColor = (value: number, isExhaustion = false) => {
+    if (isExhaustion) {
+      // Higher exhaustion = worse (red)
+      if (value >= 7) return "#ef4444";
+      if (value >= 4) return "#f59e0b";
+      return "#3b82f6";
+    }
+    // Higher satisfaction = better (blue)
+    if (value >= 7) return "#3b82f6";
+    if (value >= 4) return "#f59e0b";
+    return "#ef4444";
   };
 
   return (
@@ -53,58 +72,116 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
           <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
             <Shield className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div className="text-sm text-gray-300">
-              <p className="font-medium text-blue-300 mb-1">Your signal is anonymous</p>
+              <p className="font-medium text-blue-300 mb-1">100% Anonymous</p>
               <p className="text-gray-400">
-                We only publish aggregates when groups meet our privacy threshold (n≥20). 
-                Your individual response is never shared.
+                We only publish aggregates when n≥20. Your response is never individually identifiable.
               </p>
             </div>
           </div>
 
-          {/* Slider */}
-          <div className="space-y-4">
-            <label 
-              htmlFor="dissatisfaction-slider"
-              className="block text-sm font-medium text-gray-300"
-            >
-              How dissatisfied are you with the notwithstanding clause use?
+          {/* Q1: Weekly Comparison */}
+          <div className="space-y-3">
+            <label className="block text-sm font-medium text-gray-300">
+              Compared with last week, your classroom conditions are:
             </label>
-            
-            <div className="space-y-3">
-              {/* Current value display */}
+            <div className="grid grid-cols-3 gap-3">
+              <button
+                type="button"
+                onClick={() => setWeeklyComparison('better')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  weeklyComparison === 'better'
+                    ? getComparisonColor('better')
+                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                }`}
+              >
+                <TrendingUp className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+                <div className="text-sm font-medium">Better</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWeeklyComparison('same')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  weeklyComparison === 'same'
+                    ? getComparisonColor('same')
+                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                }`}
+              >
+                <Minus className="w-6 h-6 mx-auto mb-2 text-amber-400" />
+                <div className="text-sm font-medium">Same</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setWeeklyComparison('worse')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  weeklyComparison === 'worse'
+                    ? getComparisonColor('worse')
+                    : 'border-gray-700 bg-gray-800/50 hover:border-gray-600'
+                }`}
+              >
+                <TrendingDown className="w-6 h-6 mx-auto mb-2 text-red-400" />
+                <div className="text-sm font-medium">Worse</div>
+              </button>
+            </div>
+          </div>
+
+          {/* Q2: Satisfaction */}
+          <div className="space-y-3">
+            <label htmlFor="satisfaction-slider" className="block text-sm font-medium text-gray-300">
+              Overall job satisfaction today:
+            </label>
+            <div className="space-y-2">
               <div className="text-center">
-                <div 
-                  className="text-5xl font-bold tabular-nums mb-2"
-                  style={{ color: getSliderColor(sliderValue[0]) }}
+                <div
+                  className="text-4xl font-bold tabular-nums"
+                  style={{ color: getScaleColor(satisfaction[0], false) }}
                   aria-live="polite"
                 >
-                  {sliderValue[0]}
-                </div>
-                <div className="text-sm text-gray-400">
-                  {getSliderLabel(sliderValue[0])}
+                  {satisfaction[0]}/10
                 </div>
               </div>
-
-              {/* Slider input */}
               <Slider
-                id="dissatisfaction-slider"
-                value={sliderValue}
-                onValueChange={setSliderValue}
+                id="satisfaction-slider"
+                value={satisfaction}
+                onValueChange={setSatisfaction}
                 min={0}
-                max={100}
+                max={10}
                 step={1}
                 className="py-4"
-                aria-label="Dissatisfaction level from 0 to 100"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={sliderValue[0]}
-                aria-valuetext={`${sliderValue[0]}, ${getSliderLabel(sliderValue[0])}`}
               />
-
-              {/* Anchor labels */}
               <div className="flex justify-between text-xs text-gray-500">
-                <span>No dissatisfaction</span>
-                <span>Maximum dissatisfaction</span>
+                <span>Very dissatisfied</span>
+                <span>Very satisfied</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Q3: Exhaustion */}
+          <div className="space-y-3">
+            <label htmlFor="exhaustion-slider" className="block text-sm font-medium text-gray-300">
+              Emotional exhaustion today:
+            </label>
+            <div className="space-y-2">
+              <div className="text-center">
+                <div
+                  className="text-4xl font-bold tabular-nums"
+                  style={{ color: getScaleColor(exhaustion[0], true) }}
+                  aria-live="polite"
+                >
+                  {exhaustion[0]}/10
+                </div>
+              </div>
+              <Slider
+                id="exhaustion-slider"
+                value={exhaustion}
+                onValueChange={setExhaustion}
+                min={0}
+                max={10}
+                step={1}
+                className="py-4"
+              />
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Not at all exhausted</span>
+                <span>Completely exhausted</span>
               </div>
             </div>
           </div>
@@ -112,7 +189,7 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
           {/* Optional metadata */}
           <details className="group">
             <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300 flex items-center gap-2">
-              <span>Optional: Add role & region (stored locally until threshold met)</span>
+              <span>Optional: Add role & district (helps with breakdowns when n≥20)</span>
             </summary>
             
             <div className="mt-4 space-y-3">
@@ -125,29 +202,31 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
                     <SelectValue placeholder="Select role (optional)" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="teacher">Teacher</SelectItem>
-                    <SelectItem value="support-staff">Support Staff</SelectItem>
-                    <SelectItem value="administrator">Administrator</SelectItem>
-                    <SelectItem value="parent">Parent</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="Teacher">Teacher</SelectItem>
+                    <SelectItem value="EA">Educational Assistant</SelectItem>
+                    <SelectItem value="Admin">Administrator</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <label htmlFor="region-select" className="block text-sm font-medium text-gray-300 mb-2">
-                  Region
+                <label htmlFor="district-select" className="block text-sm font-medium text-gray-300 mb-2">
+                  District
                 </label>
-                <Select value={region} onValueChange={setRegion}>
-                  <SelectTrigger id="region-select" className="bg-gray-800 border-gray-700">
-                    <SelectValue placeholder="Select region (optional)" />
+                <Select value={district} onValueChange={setDistrict}>
+                  <SelectTrigger id="district-select" className="bg-gray-800 border-gray-700">
+                    <SelectValue placeholder="Select district (optional)" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="calgary">Calgary</SelectItem>
-                    <SelectItem value="edmonton">Edmonton</SelectItem>
-                    <SelectItem value="central">Central Alberta</SelectItem>
-                    <SelectItem value="northern">Northern Alberta</SelectItem>
-                    <SelectItem value="southern">Southern Alberta</SelectItem>
+                    <SelectItem value="Calgary 1">Calgary 1</SelectItem>
+                    <SelectItem value="Calgary 2">Calgary 2</SelectItem>
+                    <SelectItem value="Edmonton 1">Edmonton 1</SelectItem>
+                    <SelectItem value="Edmonton 2">Edmonton 2</SelectItem>
+                    <SelectItem value="Red Deer">Red Deer</SelectItem>
+                    <SelectItem value="Lethbridge">Lethbridge</SelectItem>
+                    <SelectItem value="Medicine Hat">Medicine Hat</SelectItem>
+                    <SelectItem value="Grande Prairie">Grande Prairie</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -169,7 +248,7 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
 
           {/* Footer note */}
           <p className="text-xs text-center text-gray-500">
-            By submitting, you acknowledge this is evidence-based and non-coordinative
+            Takes ~1 minute • Privacy-safe • Non-coordinative
           </p>
         </div>
       </DialogContent>

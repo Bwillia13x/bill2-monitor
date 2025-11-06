@@ -52,11 +52,17 @@ export default function V3Index() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [referralCode, setReferralCode] = useState("");
 
-  const handleSubmit = (value: number, role?: string, region?: string) => {
-    console.log("Signal submitted:", { value, role, region });
+  const handleSubmit = async (data: {
+    weeklyComparison: 'better' | 'same' | 'worse';
+    satisfaction: number;
+    exhaustion: number;
+    role?: string;
+    district?: string;
+  }) => {
+    console.log("CCI signal submitted:", data);
     
     // Generate referral code (in production, this would come from backend)
-    const code = "DS-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const code = "CCI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
     setReferralCode(code);
     
     // Close submit modal
