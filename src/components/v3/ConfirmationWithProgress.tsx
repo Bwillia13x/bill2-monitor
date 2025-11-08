@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, TrendingUp, MapPin } from "lucide-react";
+import { ViralShareCard } from "@/components/viral/ViralShareCard";
 
 interface District {
   name: string;
@@ -11,6 +12,7 @@ interface ConfirmationWithProgressProps {
   signalNumber: number;
   todayCount: number;
   userDistrict?: District;
+  cci?: number;
   onComplete: () => void;
 }
 
@@ -18,10 +20,11 @@ export function ConfirmationWithProgress({
   signalNumber,
   todayCount,
   userDistrict,
+  cci = 50,
   onComplete,
 }: ConfirmationWithProgressProps) {
   const [visible, setVisible] = useState(true);
-  const [stage, setStage] = useState<'confetti' | 'progress'>('confetti');
+  const [stage, setStage] = useState<'confetti' | 'progress' | 'share'>('confetti');
 
   useEffect(() => {
     // Create confetti effect
@@ -56,14 +59,20 @@ export function ConfirmationWithProgress({
       setStage('progress');
     }, 1500);
 
-    // Auto-advance after 4s total
+    // Transition to share after 3.5s
+    const shareTimer = setTimeout(() => {
+      setStage('share');
+    }, 3500);
+
+    // Auto-advance after 10s total (give time for share)
     const completeTimer = setTimeout(() => {
       setVisible(false);
       setTimeout(onComplete, 300);
-    }, 4000);
+    }, 10000);
 
     return () => {
       clearTimeout(progressTimer);
+      clearTimeout(shareTimer);
       clearTimeout(completeTimer);
     };
   }, [onComplete]);
@@ -126,7 +135,7 @@ export function ConfirmationWithProgress({
                 </span>
               </div>
             </>
-          ) : (
+          ) : stage === 'progress' ? (
             <>
               {/* District progress */}
               {userDistrict ? (
@@ -172,6 +181,19 @@ export function ConfirmationWithProgress({
                   Thanks! Your signal has been recorded.
                 </p>
               )}
+            </>
+          ) : (
+            <>
+              {/* Viral share card */}
+              <h3 className="text-xl font-semibold text-gray-100 mb-4">
+                Share Your Voice
+              </h3>
+              <ViralShareCard
+                signalNumber={signalNumber}
+                cci={cci}
+                district={userDistrict?.name}
+                todayCount={todayCount}
+              />
             </>
           )}
         </div>

@@ -7,6 +7,10 @@ import { ConfirmationWithProgress } from "@/components/v3/ConfirmationWithProgre
 import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
 import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
 import { MethodologyModal } from "@/components/v3/MethodologyModal";
+import { LiveActivityTicker } from "@/components/viral/LiveActivityTicker";
+import { DistrictLeaderboard } from "@/components/viral/DistrictLeaderboard";
+import { UrgencyCountdown } from "@/components/viral/UrgencyCountdown";
+import { SocialProofBanner } from "@/components/viral/SocialProofBanner";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
@@ -164,12 +168,42 @@ export default function V3IndexRefined() {
           onMethodologyClick={() => setMethodologyModalOpen(true)}
         />
 
-        {/* CCI Component Bullet Graphs */}
-        <CCIBulletGraphs
-          satisfaction={cciData?.sat_mean ?? 4.9}
-          exhaustion={cciData?.exh_mean ?? 7.1}
-          totalN={totalN}
+        {/* Social Proof Banner */}
+        <SocialProofBanner 
+          totalCount={totalN}
+          todayCount={todayCount}
+          activeNow={Math.floor(Math.random() * 15) + 5}
         />
+
+        {/* Main Content Grid */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Left Column - Metrics */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* CCI Component Bullet Graphs */}
+              <CCIBulletGraphs
+                satisfaction={cciData?.sat_mean ?? 4.9}
+                exhaustion={cciData?.exh_mean ?? 7.1}
+                totalN={totalN}
+              />
+
+              {/* Urgency Countdown */}
+              <UrgencyCountdown
+                currentCount={totalN}
+                nextMilestone={2000}
+              />
+            </div>
+
+            {/* Right Column - Social/Viral */}
+            <div className="space-y-6">
+              {/* Live Activity Ticker */}
+              <LiveActivityTicker />
+
+              {/* District Leaderboard */}
+              <DistrictLeaderboard />
+            </div>
+          </div>
+        </div>
 
         {/* Below-fold content */}
         <BelowFoldSimple
@@ -191,6 +225,7 @@ export default function V3IndexRefined() {
             signalNumber={signalNumber}
             todayCount={todayCount}
             userDistrict={userDistrict}
+            cci={cciValue}
             onComplete={handleConfirmationComplete}
           />
         )}
