@@ -3,6 +3,7 @@ import { SocialMetaTags } from "@/components/v3/SocialMetaTags";
 import { V3HeroSimple } from "@/components/v3/V3HeroSimple";
 import { CCIBulletGraphs } from "@/components/v3/CCIBulletGraphs";
 import { SubmitModal } from "@/components/v3/SubmitModal";
+import { VideoUploadModal } from "@/components/storywall/VideoUploadModal";
 import { ConfirmationWithProgress } from "@/components/v3/ConfirmationWithProgress";
 import { ShareWith3Modal } from "@/components/v3/ShareWith3Modal";
 import { BelowFoldSimple } from "@/components/v3/BelowFoldSimple";
@@ -11,7 +12,7 @@ import { LiveActivityTicker } from "@/components/viral/LiveActivityTicker";
 import { DistrictLeaderboard } from "@/components/viral/DistrictLeaderboard";
 import { UrgencyCountdown } from "@/components/viral/UrgencyCountdown";
 import { SocialProofBanner } from "@/components/viral/SocialProofBanner";
-import { StoryWallCTA } from "@/components/viral/StoryWallCTA";
+import { VideoGalleryHero } from "@/components/storywall/VideoGalleryHero";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,7 @@ const MOCK_VELOCITY = [12, 15, 18, 14, 16, 19, 17];
 
 export default function V3IndexRefined() {
   const [submitModalOpen, setSubmitModalOpen] = useState(false);
+  const [videoUploadModalOpen, setVideoUploadModalOpen] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [methodologyModalOpen, setMethodologyModalOpen] = useState(false);
@@ -157,57 +159,72 @@ export default function V3IndexRefined() {
           background: 'linear-gradient(to bottom, #0a0a0a 0%, #111827 50%, #0a0a0a 100%)',
         }}
       >
-        {/* Hero section */}
-        <V3HeroSimple
-          cciValue={cciValue}
-          cciChange={cciChange}
-          totalN={totalN}
-          sparklineData={sparklineData}
-          daysRemaining={daysRemaining}
-          onSubmitClick={() => setSubmitModalOpen(true)}
-          onShareClick={handleShareClick}
-          onMethodologyClick={() => setMethodologyModalOpen(true)}
-        />
+        {/* NEW HERO: Video Gallery */}
+        <VideoGalleryHero onUploadClick={() => setVideoUploadModalOpen(true)} />
 
-        {/* Social Proof Banner */}
-        <SocialProofBanner 
-          totalCount={totalN}
-          todayCount={todayCount}
-          activeNow={Math.floor(Math.random() * 15) + 5}
-        />
+        {/* SECTION 2: Climate Conditions Index */}
+        <section className="relative py-16 border-t border-primary/20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            {/* Section Header */}
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                Climate Conditions Index
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Real-time aggregate measure of educator wellbeing and classroom climate
+              </p>
+            </div>
 
-        {/* Main Content Grid */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left Column - Metrics */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* CCI Component Bullet Graphs */}
-              <CCIBulletGraphs
-                satisfaction={cciData?.sat_mean ?? 4.9}
-                exhaustion={cciData?.exh_mean ?? 7.1}
-                totalN={totalN}
-              />
+            {/* CCI Hero Component */}
+            <V3HeroSimple
+              cciValue={cciValue}
+              cciChange={cciChange}
+              totalN={totalN}
+              sparklineData={sparklineData}
+              daysRemaining={daysRemaining}
+              onSubmitClick={() => setSubmitModalOpen(true)}
+              onShareClick={handleShareClick}
+              onMethodologyClick={() => setMethodologyModalOpen(true)}
+            />
 
-              {/* Urgency Countdown */}
-              <UrgencyCountdown
-                currentCount={totalN}
-                nextMilestone={2000}
+            {/* Social Proof Banner */}
+            <div className="mt-8">
+              <SocialProofBanner 
+                totalCount={totalN}
+                todayCount={todayCount}
+                activeNow={Math.floor(Math.random() * 15) + 5}
               />
             </div>
 
-            {/* Right Column - Social/Viral */}
-            <div className="space-y-6">
-              {/* Story Wall CTA */}
-              <StoryWallCTA />
+            {/* Main Content Grid */}
+            <div className="mt-12 grid lg:grid-cols-3 gap-6">
+              {/* Left Column - Metrics */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* CCI Component Bullet Graphs */}
+                <CCIBulletGraphs
+                  satisfaction={cciData?.sat_mean ?? 4.9}
+                  exhaustion={cciData?.exh_mean ?? 7.1}
+                  totalN={totalN}
+                />
 
-              {/* Live Activity Ticker */}
-              <LiveActivityTicker />
+                {/* Urgency Countdown */}
+                <UrgencyCountdown
+                  currentCount={totalN}
+                  nextMilestone={2000}
+                />
+              </div>
 
-              {/* District Leaderboard */}
-              <DistrictLeaderboard />
+              {/* Right Column - Social/Viral */}
+              <div className="space-y-6">
+                {/* Live Activity Ticker */}
+                <LiveActivityTicker />
+
+                {/* District Leaderboard */}
+                <DistrictLeaderboard />
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Below-fold content */}
         <BelowFoldSimple
@@ -222,6 +239,11 @@ export default function V3IndexRefined() {
           open={submitModalOpen}
           onClose={() => setSubmitModalOpen(false)}
           onSubmit={handleSubmit}
+        />
+
+        <VideoUploadModal
+          open={videoUploadModalOpen}
+          onClose={() => setVideoUploadModalOpen(false)}
         />
 
         {showConfirmation && (
