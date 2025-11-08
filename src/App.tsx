@@ -10,6 +10,7 @@ import V2Index from "./pages/V2Index";
 import Auth from "./pages/Auth";
 import Voices from "./pages/Voices";
 import SignStudio from "./pages/SignStudio";
+import StoryWall from "./pages/StoryWall";
 import Press from "./pages/Press";
 import Pulse from "./pages/Pulse";
 import Engage from "./pages/Engage";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/voices" element={<Voices />} />
+            <Route path="/story-wall" element={<StoryWall />} />
             <Route path="/studio/signs" element={<SignStudio />} />
             <Route path="/press" element={<Press />} />
             <Route path="/pulse" element={<Pulse />} />

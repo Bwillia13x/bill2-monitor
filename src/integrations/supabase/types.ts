@@ -291,6 +291,54 @@ export type Database = {
         }
         Relationships: []
       }
+      story_videos: {
+        Row: {
+          approved: boolean | null
+          created_at: string
+          district: string | null
+          duration_seconds: number | null
+          id: string
+          message: string
+          role: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          video_url: string
+          views: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          duration_seconds?: number | null
+          id?: string
+          message: string
+          role?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          video_url: string
+          views?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          created_at?: string
+          district?: string | null
+          duration_seconds?: number | null
+          id?: string
+          message?: string
+          role?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          video_url?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

@@ -11,6 +11,7 @@ import { LiveActivityTicker } from "@/components/viral/LiveActivityTicker";
 import { DistrictLeaderboard } from "@/components/viral/DistrictLeaderboard";
 import { UrgencyCountdown } from "@/components/viral/UrgencyCountdown";
 import { SocialProofBanner } from "@/components/viral/SocialProofBanner";
+import { StoryWallCTA } from "@/components/viral/StoryWallCTA";
 import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
@@ -196,6 +197,9 @@ export default function V3IndexRefined() {
 
             {/* Right Column - Social/Viral */}
             <div className="space-y-6">
+              {/* Story Wall CTA */}
+              <StoryWallCTA />
+
               {/* Live Activity Ticker */}
               <LiveActivityTicker />
 
@@ -248,13 +252,16 @@ export default function V3IndexRefined() {
             <div>
               © 2024 Digital Strike. Evidence-based, non-coordinative, privacy-first.
             </div>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap gap-6 justify-center">
               <button
                 onClick={() => setMethodologyModalOpen(true)}
                 className="hover:text-gray-300 transition-colors"
               >
                 Methodology & Privacy
               </button>
+              <a href="/story-wall" className="hover:text-gray-300 transition-colors">
+                Story Wall
+              </a>
               <a href="/press" className="hover:text-gray-300 transition-colors">
                 Press
               </a>
