@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Shield, Lock, TrendingUp, Minus, TrendingDown } from "lucide-react";
+import { GeoFenceWarning } from "@/components/geolocation/GeoFenceWarning";
+import { checkGeoFence } from "@/lib/geolocation/ipGeolocation";
 
 type WeeklyComparison = 'better' | 'same' | 'worse';
 
@@ -25,6 +27,28 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
   const [exhaustion, setExhaustion] = useState([5]);
   const [role, setRole] = useState<string>();
   const [district, setDistrict] = useState<string>();
+  const [geoCheck, setGeoCheck] = useState<any>(null);
+  const [geoLoading, setGeoLoading] = useState(true);
+  const [showGeoWarning, setShowGeoWarning] = useState(false);
+
+  // Check location when modal opens
+  useEffect(() => {
+    if (open) {
+      setGeoLoading(true);
+      checkGeoFence().then(result => {
+        setGeoCheck(result);
+        setGeoLoading(false);
+        // Show warning if not in Alberta
+        if (result && !result.is_alberta) {
+          setShowGeoWarning(true);
+        }
+      });
+    } else {
+      // Reset when modal closes
+      setShowGeoWarning(false);
+      setGeoCheck(null);
+    }
+  }, [open]);
 
   const handleSubmit = () => {
     onSubmit({
@@ -34,6 +58,10 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
       role,
       district,
     });
+  };
+
+  const handleContinueAnyway = () => {
+    setShowGeoWarning(false);
   };
 
   const getComparisonColor = (comparison: WeeklyComparison) => {
@@ -78,6 +106,25 @@ export function SubmitModal({ open, onClose, onSubmit }: SubmitModalProps) {
               </p>
             </div>
           </div>
+
+          {/* Geo-fence warning */}
+          {showGeoWarning && geoCheck && !geoCheck.is_alberta && (
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-gray-300">
+                <p className="font-medium text-yellow-300 mb-1">Location Notice</p>
+                <p className="text-gray-400 mb-2">
+                  <strong>Your location:</strong> {geoCheck.location}
+                </p>
+                <p className="text-gray-400 mb-2">
+                  This platform is for Alberta teachers. Data from outside Alberta may be excluded.
+                </p>
+                {geoCheck.warning && (
+                  <p className="text-yellow-300 text-xs">{geoCheck.warning}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Q1: Weekly Comparison */}
           <div className="space-y-3">

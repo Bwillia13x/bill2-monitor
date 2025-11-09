@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Shield, Share2, TrendingUp, TrendingDown, Info } from "lucide-react";
 import { CCISparkline } from "./CCISparkline";
+import { SuppressionNotice } from "@/components/methods/SuppressionNotice";
 
 interface V3HeroSimpleProps {
-  cciValue: number;
+  cciValue: number | null;
   cciChange?: number | null;
   totalN: number;
   sparklineData?: Array<{ day: string; cci: number; n: number }>;
@@ -11,6 +12,7 @@ interface V3HeroSimpleProps {
   onSubmitClick: () => void;
   onShareClick: () => void;
   onMethodologyClick: () => void;
+  isSuppressed?: boolean;
 }
 
 export function V3HeroSimple({
@@ -22,6 +24,7 @@ export function V3HeroSimple({
   onSubmitClick,
   onShareClick,
   onMethodologyClick,
+  isSuppressed = false,
 }: V3HeroSimpleProps) {
   const getCCIColor = (cci: number) => {
     if (cci >= 60) return "#3b82f6"; // blue (positive)
@@ -34,6 +37,50 @@ export function V3HeroSimple({
     if (cci >= 40) return "Conditions stable";
     return "Conditions worsening";
   };
+
+  // Handle suppressed data
+  if (isSuppressed || cciValue === null) {
+    return (
+      <section 
+        className="min-h-screen flex flex-col justify-center px-4 py-12"
+        aria-label="Digital Strike Meter - Data Suppressed"
+      >
+        <div className="max-w-2xl mx-auto w-full">
+          <SuppressionNotice n={totalN} threshold={20} />
+          
+          <div className="text-center mt-8">
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-300 mb-6">
+              Classroom Conditions Index (CCI)
+            </h1>
+            
+            <p className="text-lg text-gray-400 mb-8">
+              Help unlock this data by contributing your anonymous signal.
+            </p>
+
+            <div className="flex flex-col gap-4">
+              <Button
+                onClick={onSubmitClick}
+                size="lg"
+                className="w-full py-6 text-lg font-semibold rounded-xl bg-primary hover:bg-primary/90"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Add Anonymous Signal
+              </Button>
+
+              <Button
+                onClick={onMethodologyClick}
+                variant="outline"
+                className="w-full py-6 text-lg font-semibold rounded-xl border-2 border-primary/50 bg-transparent hover:bg-primary/10 text-primary"
+              >
+                <Info className="w-5 h-5 mr-2" />
+                Learn About Methodology
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section 
       className="min-h-screen flex flex-col justify-center px-4 py-12"

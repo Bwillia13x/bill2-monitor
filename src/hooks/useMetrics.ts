@@ -199,15 +199,16 @@ export function useSafeguardRatio(cKey = DEFAULT_CAMPAIGN_KEY) {
 
 // CCI (Diffusion Index) Types
 interface CCIData {
-  cci: number;
-  p_better: number;
-  p_same: number;
-  p_worse: number;
+  cci: number | null;
+  p_better: number | null;
+  p_same: number | null;
+  p_worse: number | null;
   total_n: number;
-  sat_mean: number;
-  exh_mean: number;
+  sat_mean: number | null;
+  exh_mean: number | null;
   cci_change_1d: number | null;
   last_updated: string;
+  isSuppressed?: boolean;
 }
 
 interface CCISparklinePoint {
@@ -217,16 +218,33 @@ interface CCISparklinePoint {
 }
 
 // Get CCI aggregate (diffusion index 0-100, 50 = neutral)
-export function useCCI(daysBack = 7) {
+export function useCCI(daysBack = 7, minN = 20) {
   return useQuery({
-    queryKey: ["cci", daysBack],
+    queryKey: ["cci", daysBack, minN],
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_cci_aggregate", {
         days_back: daysBack,
+        min_n: minN,
       });
 
       if (error) throw error;
       if (!data || data.length === 0) return MOCK_CCI;
+
+      // Check if data is suppressed (n < minN)
+      if (data[0].total_n < minN) {
+        return {
+          cci: null,
+          p_better: null,
+          p_same: null,
+          p_worse: null,
+          total_n: data[0].total_n,
+          sat_mean: null,
+          exh_mean: null,
+          cci_change_1d: null,
+          last_updated: data[0].last_updated,
+          isSuppressed: true,
+        } as CCIData;
+      }
 
       return {
         cci: Number(data[0].cci),
@@ -238,6 +256,7 @@ export function useCCI(daysBack = 7) {
         exh_mean: Number(data[0].exh_mean),
         cci_change_1d: data[0].cci_change_1d ? Number(data[0].cci_change_1d) : null,
         last_updated: data[0].last_updated,
+        isSuppressed: false,
       } as CCIData;
     },
     staleTime: CACHE_TIME,

@@ -7,11 +7,13 @@ import { useState } from "react";
 
 const NAV_LINKS = [
   { to: "/", label: "Meter" },
+  { to: "/methods-v1.0", label: "Methods" },
   { to: "/voices", label: "Voices" },
   { to: "/engage", label: "Engage" },
   { to: "/pulse", label: "Pulse" },
   { to: "/studio/signs", label: "Signs" },
   { to: "/press", label: "Press" },
+  { to: "/advisory-board", label: "Governance" },
 ];
 
 export function Header() {
@@ -26,8 +28,8 @@ export function Header() {
           <Link to="/" className="flex items-center gap-3">
             <Logo />
             <div className="leading-tight">
-              <div className="text-sm uppercase tracking-wider text-muted-foreground">Digital Strike</div>
-              <div className="text-[11px] text-muted-foreground/70">Lawful, privacy‑preserving educator sentiment</div>
+              <div className="text-sm uppercase tracking-wider text-muted-foreground">Alberta Teacher Conditions Index</div>
+              <div className="text-[11px] text-muted-foreground/70">Independent measurement of educator working conditions</div>
             </div>
           </Link>
 

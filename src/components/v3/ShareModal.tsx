@@ -27,7 +27,7 @@ export function ShareModal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const shareUrl = `${window.location.origin}?ref=${referralCode}`;
-  const shareText = "I added my anonymous signal to Digital Strike — evidence, not coordination. Join us.";
+  const shareText = "I added my anonymous signal to the Alberta Teacher Conditions Index — independent measurement platform. Participate here:"
 
   // Generate share card on canvas
   useEffect(() => {
@@ -64,7 +64,7 @@ export function ShareModal({
     // Label
     ctx.fillStyle = '#d1d5db';
     ctx.font = 'bold 48px Inter, sans-serif';
-    const label = selectedTheme === "meter" ? 'Digital Strike Meter' : 'Days Until Strike Window';
+    const label = selectedTheme === "meter" ? 'Teacher Conditions Index' : 'Days Until Strike Window';
     ctx.fillText(label, canvas.width / 2, canvas.height / 2 + 100);
 
     // Subtitle

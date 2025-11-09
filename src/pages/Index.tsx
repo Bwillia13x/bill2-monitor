@@ -54,6 +54,7 @@ export default function V3IndexRefined() {
   const cciValue = cciData?.cci ?? 47.6;
   const cciChange = cciData?.cci_change_1d ?? null;
   const totalN = cciData?.total_n ?? 1284;
+  const isSuppressed = cciData?.isSuppressed ?? false;
 
   const [signalNumber, setSignalNumber] = useState(totalN);
   const [todayCount, setTodayCount] = useState(MOCK_VELOCITY[MOCK_VELOCITY.length - 1]);
@@ -185,6 +186,7 @@ export default function V3IndexRefined() {
               onSubmitClick={() => setSubmitModalOpen(true)}
               onShareClick={handleShareClick}
               onMethodologyClick={() => setMethodologyModalOpen(true)}
+              isSuppressed={isSuppressed}
             />
 
             {/* Social Proof Banner */}
@@ -272,7 +274,7 @@ export default function V3IndexRefined() {
         <footer className="border-t border-gray-800 py-8 px-4">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
             <div>
-              © 2024 Digital Strike. Evidence-based, non-coordinative, privacy-first.
+              © 2024 Alberta Teacher Conditions Index. Independent, neutral measurement platform.
             </div>
             <div className="flex flex-wrap gap-6 justify-center">
               <button

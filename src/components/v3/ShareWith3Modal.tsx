@@ -24,7 +24,7 @@ export function ShareWith3Modal({
   const shareUrl = `${window.location.origin}?ref=${referralCode}`;
   
   // Optimized share copy for K-factor
-  const shareText = `I just added my anonymous signal to the Alberta Digital Strike Meter—privacy-safe, evidence-based. Add yours + help unlock your district:`;
+  const shareText = `I just added my anonymous signal to the Alberta Teacher Conditions Index—privacy-safe, evidence-based. Add yours + help unlock your district:`;
 
   // Generate share card on canvas
   useEffect(() => {
@@ -109,7 +109,7 @@ export function ShareWith3Modal({
 
     if (platform === 'native' && navigator.share) {
       navigator.share({
-        title: 'Digital Strike Meter',
+        title: 'Teacher Conditions Index',
         text: shareText,
         url: shareUrl,
       }).catch(() => {

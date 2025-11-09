@@ -14,6 +14,10 @@ import StoryWall from "./pages/StoryWall";
 import Press from "./pages/Press";
 import Pulse from "./pages/Pulse";
 import Engage from "./pages/Engage";
+import Methods from "./pages/Methods";
+import AdvisoryBoard from "./pages/AdvisoryBoard";
+import ModerationDashboard from "./pages/ModerationDashboard";
+import PersonalDashboard from "./pages/PersonalDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +40,10 @@ const App = () => (
             <Route path="/pulse" element={<Pulse />} />
             <Route path="/engage" element={<Engage />} />
             <Route path="/v2" element={<V2Index />} />
+            <Route path="/methods-v1.0" element={<Methods />} />
+            <Route path="/advisory-board" element={<AdvisoryBoard />} />
+            <Route path="/moderation" element={<ModerationDashboard />} />
+            <Route path="/dashboard" element={<PersonalDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -57,6 +57,23 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // WCAG 2.2 AA compliant colors
+        accessible: {
+          primary: {
+            DEFAULT: "hsl(160, 84%, 39%)", // Teal with 4.5:1 contrast
+            hover: "hsl(160, 84%, 45%)",
+          },
+          text: {
+            primary: "hsl(210, 40%, 98%)", // High contrast text
+            secondary: "hsl(215, 20%, 65%)", // Secondary text
+            muted: "hsl(215, 15%, 55%)", // Muted text
+          },
+          background: {
+            main: "hsl(217, 33%, 2%)", // Main background
+            card: "hsl(217, 33%, 8%)", // Card background
+            border: "hsl(217, 15%, 20%)", // Border color
+          },
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -110,6 +127,21 @@ export default {
         "shimmer": {
           "0%": { backgroundPosition: "200% 0" },
           "100%": { backgroundPosition: "-200% 0" }
+        },
+        // Reduced motion alternatives
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "slide-up": {
+          from: { 
+            transform: "translateY(10px)",
+            opacity: "0"
+          },
+          to: { 
+            transform: "translateY(0)",
+            opacity: "1"
+          },
         }
       },
       animation: {
@@ -121,6 +153,9 @@ export default {
         "glow-pulse": "glow-pulse 3s ease-in-out infinite",
         "needle-enter": "needle-enter 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
         "shimmer": "shimmer 3s linear infinite",
+        // Reduced motion alternatives
+        "fade-in": "fade-in 0.3s ease-out",
+        "slide-up": "slide-up 0.3s ease-out",
       },
     },
   },

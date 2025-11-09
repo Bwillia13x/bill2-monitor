@@ -1,0 +1,345 @@
+/* Accessibility enhancements and utilities */
+
+/* Skip links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  font-weight: 500;
+  z-index: 100;
+  transition: top 0.3s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: none;
+}
+
+/* Focus visible styles */
+.focus-visible\:ring-2:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary));
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --primary: 160 84% 45% !important;
+    --primary-foreground: 0 0% 0% !important;
+    --background: 0 0% 0% !important;
+    --foreground: 0 0% 100% !important;
+    --border: 0 0% 100% !important;
+  }
+  
+  .border {
+    border-width: 2px !important;
+  }
+  
+  button, 
+  [role="button"],
+  .btn {
+    border: 2px solid currentColor !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Replace animations with fade/slide */
+  .animate-breathe {
+    animation: fade-in 0.3s ease-out !important;
+  }
+  
+  .animate-glow-pulse {
+    animation: fade-in 0.3s ease-out !important;
+  }
+  
+  .animate-needle-enter {
+    animation: slide-up 0.3s ease-out !important;
+  }
+  
+  .animate-shimmer {
+    background: none !important;
+  }
+}
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Focus management */
+.focus-trap {
+  outline: none;
+}
+
+.focus-trap:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* ARIA live regions */
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Color contrast improvements */
+.text-accessible-primary {
+  color: hsl(210, 40%, 98%); /* 4.5:1 contrast on dark background */
+}
+
+.text-accessible-secondary {
+  color: hsl(215, 20%, 65%); /* 3:1 contrast for secondary text */
+}
+
+.text-accessible-muted {
+  color: hsl(215, 15%, 55%); /* 2.5:1 contrast for muted text */
+}
+
+.bg-accessible-primary {
+  background-color: hsl(160, 84%, 39%); /* Teal with 4.5:1 contrast */
+}
+
+.hover\:bg-accessible-primary-hover:hover {
+  background-color: hsl(160, 84%, 45%);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 25%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.1) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-skeleton {
+    background: rgba(255, 255, 255, 0.1);
+    animation: none;
+  }
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Error states */
+.error-boundary {
+  padding: 1rem;
+  background-color: hsl(0, 84%, 90%);
+  border: 1px solid hsl(0, 84%, 40%);
+  color: hsl(0, 84%, 20%);
+  border-radius: 0.5rem;
+}
+
+.error-boundary h2 {
+  font-size: 1.125rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.error-boundary button {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: hsl(0, 84%, 40%);
+  color: white;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+}
+
+.error-boundary button:hover {
+  background-color: hsl(0, 84%, 35%);
+}
+
+.error-boundary button:focus {
+  outline: 2px solid hsl(0, 84%, 40%);
+  outline-offset: 2px;
+}
+
+/* Form accessibility */
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Button accessibility */
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Link accessibility */
+a:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Table accessibility */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+}
+
+th, td {
+  padding: 0.75rem;
+  border: 1px solid hsl(var(--border));
+}
+
+/* Modal/Dialog accessibility */
+[role="dialog"][aria-modal="true"] {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  z-index: 1000;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [role="dialog"][aria-modal="true"] {
+    transform: none;
+  }
+}
+
+/* Alert accessibility */
+[role="alert"] {
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+[role="alert"][aria-label="Error"] {
+  background-color: hsl(0, 84%, 95%);
+  border: 1px solid hsl(0, 84%, 40%);
+  color: hsl(0, 84%, 20%);
+}
+
+[role="alert"][aria-label="Success"] {
+  background-color: hsl(142, 71%, 95%);
+  border: 1px solid hsl(142, 71%, 40%);
+  color: hsl(142, 71%, 20%);
+}
+
+[role="alert"][aria-label="Warning"] {
+  background-color: hsl(38, 92%, 95%);
+  border: 1px solid hsl(38, 92%, 40%);
+  color: hsl(38, 92%, 20%);
+}
+
+/* Progress indicators */
+[role="progressbar"] {
+  background-color: hsl(var(--muted));
+  border-radius: 0.25rem;
+  height: 0.5rem;
+  overflow: hidden;
+}
+
+[role="progressbar"] > div {
+  background-color: hsl(var(--primary));
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [role="progressbar"] > div {
+    transition: none;
+  }
+}
+
+/* Keyboard navigation indicator */
+.keyboard-navigation :focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+.keyboard-navigation button:focus,
+.keyboard-navigation [role="button"]:focus,
+.keyboard-navigation input:focus,
+.keyboard-navigation select:focus,
+.keyboard-navigation textarea:focus,
+.keyboard-navigation a:focus {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+/* Light mode support */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+  }
+}
