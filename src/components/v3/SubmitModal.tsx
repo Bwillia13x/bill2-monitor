@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Shield, Lock, TrendingUp, Minus, TrendingDown } from "lucide-react";
+import { Shield, Lock, TrendingUp, Minus, TrendingDown, AlertTriangle } from "lucide-react";
 import { GeoFenceWarning } from "@/components/geolocation/GeoFenceWarning";
 import { checkGeoFence } from "@/lib/geolocation/ipGeolocation";
 

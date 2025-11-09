@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useTheme } from '@/components/theme-provider';
 
 interface SparklineDataPoint {
   date: string;
@@ -23,7 +22,7 @@ export function Sparkline({
   strokeWidth = 2 
 }: SparklineProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { theme } = useTheme();
+  const theme = 'dark'; // Default theme
 
   useEffect(() => {
     if (!canvasRef.current || !data || data.length === 0) return;
@@ -162,7 +161,7 @@ export function SparklineSVG({
   height = 200,
   color 
 }: SparklineProps) {
-  const { theme } = useTheme();
+  const theme = 'dark'; // Default theme
   
   if (!data || data.length === 0) return null;
 

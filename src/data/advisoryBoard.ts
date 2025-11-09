@@ -232,5 +232,4 @@ export const boardDecisions: BoardDecision[] = [
   }
 ];
 
-// Export types for use in components
-export type { AdvisoryBoardMember, GovernanceStructure, PlatformPrinciples, ContactInfo, BoardDecision };
+// Types are exported inline above
