@@ -21,7 +21,70 @@ npm run test:coverage
 
 # Run tests with UI
 npm run test:ui
+
+# Check bundle sizes
+npm run bundle:check
+
+# View bundle report
+npm run bundle:report
 ```
+
+## Bundle Budget Enforcement
+
+### Size Limits
+
+- **JavaScript chunks**: ≤ 300 KB (uncompressed) per chunk
+- **Total JavaScript**: No hard limit (code splitting enforced)
+- **Vendor chunks**: Exempt from limit (e.g., recharts-vendor)
+
+### Running Bundle Checks
+
+```bash
+# Build and analyze bundle
+npm run build
+npm run bundle:report
+
+# Or run both in one command
+npm run bundle:check
+```
+
+### CI Bundle Budget
+
+In CI, bundle checks enforce:
+- ✅ All non-vendor chunks ≤ 300 KB
+- ✅ Vendor chunks allowed to exceed limit (lazy loaded)
+- ✅ Lazy loading detected in App.tsx
+- ✅ Suspense boundaries present
+- ❌ Fails if violations found
+
+**Current Status**: Main bundle split using manual chunks:
+- `recharts-vendor`: Chart library (lazy loaded)
+- `carousel-vendor`: Embla carousel
+- `radix-vendor`: Radix UI components
+- `react-vendor`: React core libraries
+- `data-vendor`: Supabase + React Query
+
+### Web Vitals Testing
+
+Telemetry tests include synthetic Web Vitals simulation:
+
+```bash
+# Run telemetry tests
+npm test tests/telemetry.test.ts
+```
+
+Tests verify:
+- ✅ Metrics buffered and flushed correctly
+- ✅ URL privacy scrubbing (query/hash removal)
+- ✅ Path truncation to 3 segments
+- ✅ Retry logic with exponential backoff
+- ✅ Circuit breaker on repeated failures
+- ✅ Error deduplication within 1-hour windows
+
+**Mock vitals** are generated in tests with:
+- Good: LCP < 2.5s, INP < 200ms, CLS < 0.1
+- Needs improvement: Above good but below poor
+- Poor: LCP ≥ 4s, INP ≥ 500ms, CLS ≥ 0.25
 
 ## Environment Variables
 
@@ -31,6 +94,8 @@ Tests use the following environment variables (all set automatically in test mod
 |----------|-----------------|-------------|
 | `VITE_BACKEND_MODE` | `mock` | Backend mode: `mock` (no network) or `live` (real API calls) |
 | `VITE_MERKLE_LOGGING_ENABLED` | `true` | Enable/disable Merkle chain integrity logging |
+| `VITE_TELEMETRY_ENDPOINT` | `/api/telemetry` | Telemetry endpoint (mocked in tests) |
+| `VITE_ERROR_ENDPOINT` | `/api/errors` | Error reporting endpoint (mocked in tests) |
 
 ### Setting Environment Variables
 

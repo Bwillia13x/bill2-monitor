@@ -86,6 +86,10 @@ jobs:
     - name: Build project
       run: npm run build
     
+    - name: Check bundle sizes
+      run: npm run bundle:report
+      continue-on-error: false
+    
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       if: matrix.node-version == 20

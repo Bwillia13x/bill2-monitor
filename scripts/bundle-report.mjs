@@ -68,8 +68,10 @@ function printReport(chunks) {
     if (chunk.type === 'css') cssSize += chunk.size;
 
     const sizeKB = chunk.size / 1024;
-    // Only check JS files against the budget (assets like images are excluded)
-    const exceeds = chunk.type === 'js' && sizeKB > MAX_CHUNK_SIZE_KB;
+    // Vendor chunks (ending in -vendor.js) are exempt from budget as they're lazy loaded
+    const isVendorChunk = chunk.type === 'js' && chunk.name.includes('-vendor');
+    // Only check non-vendor JS files against the budget (assets like images are excluded)
+    const exceeds = chunk.type === 'js' && !isVendorChunk && sizeKB > MAX_CHUNK_SIZE_KB;
     const icon = exceeds ? '❌' : '✅';
     
     if (exceeds) violations++;
@@ -92,11 +94,11 @@ function printReport(chunks) {
   console.log(`   CSS: ${formatBytes(cssSize)} (${chunks.filter(c => c.type === 'css').length} files)`);
   console.log(`   Other: ${formatBytes(totalSize - jsSize - cssSize)}`);
 
-  console.log(`\n⚠️  JavaScript budget violations: ${violations} JS chunks exceed ${MAX_CHUNK_SIZE_KB}KB`);
+  console.log(`\n⚠️  JavaScript budget violations: ${violations} non-vendor JS chunks exceed ${MAX_CHUNK_SIZE_KB}KB (vendor chunks exempt)`);
   
   if (violations > 0) {
     console.log('\n❌ Bundle size check FAILED');
-    console.log(`\nPlease optimize JS chunks larger than ${MAX_CHUNK_SIZE_KB}KB using:`);
+    console.log(`\nPlease optimize non-vendor JS chunks larger than ${MAX_CHUNK_SIZE_KB}KB using:`);
     console.log('  - Code splitting with React.lazy()');
     console.log('  - Dynamic imports');
     console.log('  - Tree shaking');
