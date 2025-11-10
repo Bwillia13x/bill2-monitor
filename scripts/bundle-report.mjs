@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DIST_DIR = path.join(__dirname, '..', 'dist', 'assets');
-const MAX_CHUNK_SIZE_KB = 300; // 300 KB gzip limit
+const MAX_CHUNK_SIZE_KB = 300; // 300 KB uncompressed limit
 
 function formatBytes(bytes) {
   if (bytes === 0) return '0 B';

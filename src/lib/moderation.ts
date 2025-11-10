@@ -183,10 +183,7 @@ export function scrubPII(text: string): string {
   // Remove SSN (traditional format)
   scrubbed = scrubbed.replace(PII_PATTERNS.ssn, "[id redacted]");
   
-  // Remove Canadian SIN with spaces (before healthcare IDs to avoid conflicts)
-  scrubbed = scrubbed.replace(PII_PATTERNS.sinSpaces, "[id redacted]");
-  
-  // Remove Canadian SIN without spaces
+  // Remove Canadian SIN (handles both with and without spaces)
   scrubbed = scrubbed.replace(PII_PATTERNS.sin, "[id redacted]");
   
   // Remove healthcare IDs

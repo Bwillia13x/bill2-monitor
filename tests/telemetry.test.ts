@@ -293,7 +293,7 @@ describe('Telemetry Service', () => {
 
   describe('SendBeacon Fallback', () => {
     it('should use sendBeacon when requested', async () => {
-      const { sendVitals, flushTelemetry } = await import('../src/lib/telemetry');
+      const { sendVitals } = await import('../src/lib/telemetry');
       
       mockSendBeacon.mockReturnValue(true);
 

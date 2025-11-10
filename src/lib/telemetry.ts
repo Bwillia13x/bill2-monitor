@@ -384,11 +384,13 @@ class TelemetryService {
   }
 }
 
-// Singleton instance
-export const telemetryService = new TelemetryService();
+// Singleton instance - only initialize in browser environment
+export const telemetryService = typeof window !== 'undefined' ? new TelemetryService() : null;
 
-// Export convenience functions
-export const sendVitals = (vital: WebVitalReport) => telemetryService.sendVitals(vital);
+// Export convenience functions with SSR safety checks
+export const sendVitals = (vital: WebVitalReport) => 
+  telemetryService ? telemetryService.sendVitals(vital) : Promise.resolve();
 export const sendError = (error: Error, context?: Record<string, unknown>) => 
-  telemetryService.sendError(error, context);
-export const flushTelemetry = () => telemetryService.forceFlush();
+  telemetryService ? telemetryService.sendError(error, context) : Promise.resolve();
+export const flushTelemetry = () => 
+  telemetryService ? telemetryService.forceFlush() : Promise.resolve();

@@ -105,7 +105,7 @@ Error context is filtered to remove PII:
 ### No Personal Identifiers
 
 - No user IDs, email addresses, or names collected
-- No IP addresses stored (Supabase edge functions don't log IPs)
+- No IP addresses are explicitly collected or stored by the application. While infrastructure logs may contain IP addresses for operational purposes, they are not used for analytics or linked to telemetry data.
 - Session IDs are random, temporary, and not linked to user accounts
 - Device fingerprints are NOT used for telemetry
 
