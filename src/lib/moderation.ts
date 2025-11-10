@@ -60,7 +60,8 @@ const PII_PATTERNS = {
   phoneInternational: /\+(?!1\b)\d{1,4}(?:[-.\s]?\d{1,4}){1,4}\b/g,
   // Toll-free numbers
   phoneTollFree: /(?:\+?1[-.\s]?)?(?:800|888|877|866|855|844|833)[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
-  url: /https?:\/\/[^\s]+/g,
+  // URLs - avoid capturing trailing sentence punctuation
+  url: /https?:\/\/[^\s]+?(?=[.,;!?]?(?:\s|$))/g,
   // School names - need to capture city prefix (e.g., "Calgary Elementary No. 23")
   schoolWithCityAndNumber: /\b[A-Z][a-z]+\s+(?:Elementary|Junior|High|Secondary|Composite|School)(?:\s+School)?\s+No\.\s*\d+\b/g,
   // Board of Education patterns
