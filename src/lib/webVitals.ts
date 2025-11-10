@@ -2,9 +2,7 @@
 // Tracks Core Web Vitals (CLS, FID, LCP) and other metrics (FCP, TTFB, INP)
 
 import { onCLS, onFCP, onINP, onLCP, onTTFB, Metric, ReportCallback } from 'web-vitals';
-
-// Analytics endpoint for reporting (can be configured)
-const ANALYTICS_ENDPOINT = '/api/analytics/vitals'; // Placeholder - would be configured
+import { sendVitals } from './telemetry';
 
 // Thresholds based on Google's Core Web Vitals recommendations
 export const WEB_VITALS_THRESHOLDS = {
@@ -67,30 +65,16 @@ function logToConsole(report: WebVitalReport) {
   );
 }
 
-// Send to analytics endpoint (stubbed for now)
+// Send to telemetry service
 async function sendToAnalytics(report: WebVitalReport) {
-  if (process.env.NODE_ENV === 'development') {
-    // In development, just log
-    return;
-  }
-  
   try {
-    // Use sendBeacon for reliability (doesn't block page unload)
-    if (navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(report)], { type: 'application/json' });
-      navigator.sendBeacon(ANALYTICS_ENDPOINT, blob);
-    } else {
-      // Fallback to fetch
-      await fetch(ANALYTICS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(report),
-        keepalive: true, // Keep request alive even if page is unloading
-      });
-    }
+    // Send through telemetry service which handles buffering, retries, etc.
+    await sendVitals(report);
   } catch (error) {
     // Silent fail - don't break user experience for analytics
-    console.error('Failed to send Web Vitals:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to send Web Vitals:', error);
+    }
   }
 }
 

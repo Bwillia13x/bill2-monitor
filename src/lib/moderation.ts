@@ -80,9 +80,13 @@ const PII_PATTERNS = {
   ssn: /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/g,
   // Canadian SIN with spaces
   sinSpaces: /\b\d{3}\s+\d{3}\s+\d{3}\b/g,
+  // Canadian SIN without spaces (traditional)
+  sin: /\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b/g,
   creditCard: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
   // License numbers with various formats
   licenseNumber: /\b(?:License|Lic|DL)(?:\s*#)?[:\s]+[A-Z]{0,2}-?\d{6,12}\b/gi,
+  // Driver license format: DL-123456789
+  driverLicense: /\bDL[-\s]?\d{6,12}\b/gi,
   // Postal codes (Canadian) - with word boundaries
   postalCode: /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/gi,
   // Address patterns
@@ -182,8 +186,14 @@ export function scrubPII(text: string): string {
   // Remove Canadian SIN with spaces (before healthcare IDs to avoid conflicts)
   scrubbed = scrubbed.replace(PII_PATTERNS.sinSpaces, "[id redacted]");
   
+  // Remove Canadian SIN without spaces
+  scrubbed = scrubbed.replace(PII_PATTERNS.sin, "[id redacted]");
+  
   // Remove healthcare IDs
   scrubbed = scrubbed.replace(PII_PATTERNS.healthcareId, "[id redacted]");
+  
+  // Remove driver license format (DL-123456789) - before generic license pattern
+  scrubbed = scrubbed.replace(PII_PATTERNS.driverLicense, "[id redacted]");
   
   // Remove license numbers (before general ID patterns)
   scrubbed = scrubbed.replace(PII_PATTERNS.licenseNumber, "[id redacted]");

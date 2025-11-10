@@ -5,6 +5,7 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { sendError } from '@/lib/telemetry';
 
 interface Props {
   children: ReactNode;
@@ -62,33 +63,15 @@ class ErrorLogger {
       // Ignore storage errors
     }
     
-    // Send to external logging service (if configured)
-    this.sendToLoggingService(errorReport);
+    // Send to telemetry service (which handles deduplication, rate limiting, etc.)
+    this.sendToTelemetryService(error, context);
   }
   
-  private async sendToLoggingService(errorReport: {
-    timestamp: string;
-    message: string;
-    stack?: string;
-    componentStack?: string;
-    userAgent: string;
-    url: string;
-    context?: Record<string, unknown>;
-  }) {
-    // Placeholder for external logging service integration
-    // Could integrate with Sentry, LogRocket, etc.
-    
-    if (process.env.NODE_ENV === 'production' && process.env.VITE_ERROR_LOGGING_ENDPOINT) {
-      try {
-        await fetch(process.env.VITE_ERROR_LOGGING_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(errorReport),
-          keepalive: true,
-        });
-      } catch (e) {
-        // Silent fail
-      }
+  private async sendToTelemetryService(error: Error, context?: Record<string, unknown>) {
+    try {
+      await sendError(error, context);
+    } catch (e) {
+      // Silent fail - telemetry service handles its own errors
     }
   }
   
@@ -271,9 +254,9 @@ export function withErrorBoundary<P extends object>(
 
 // Hook for manually reporting errors
 export function useErrorReporting() {
-  const reportError = (error: Error, context?: Record<string, unknown>) => {
+  const reportError = React.useCallback((error: Error, context?: Record<string, unknown>) => {
     errorLogger.logError(error, undefined, context);
-  };
+  }, []);
   
   return { reportError };
 }
