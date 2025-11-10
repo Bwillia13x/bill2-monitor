@@ -126,7 +126,7 @@ const hash = await getDeviceHash();
 
 ### New Dependency: web-vitals
 
-**Package**: `web-vitals@^4.2.4`
+**Package**: `web-vitals@^5.1.0`
 **Source**: Google (official Chrome team package)
 **Security**: 
 - ✅ Official Google package
