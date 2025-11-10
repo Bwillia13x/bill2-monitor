@@ -283,8 +283,8 @@ describe('Privacy Test Suite', () => {
         { id: '2', text: 'Too much paperwork', district: 'Edmonton' }
       ];
       
-      const result = await storyClusteringService.clusterStories(mockStories);
-      expect(result.clusters.size).toBeGreaterThan(0);
+      const clusters = storyClusteringService.clusterStories(mockStories);
+      expect(clusters.size).toBeGreaterThan(0);
     });
   });
 
@@ -547,8 +547,10 @@ describe('Privacy Test Suite', () => {
       const original = 'Contact john@example.com for info, or call 555-1234. Visit https://test.com.';
       const result = scrubPII(original);
       
-      // Should have same number of sentences
-      expect(result.split('.').length).toBe(original.split('.').length);
+      // Should preserve sentence-ending periods (count periods followed by space or end of string)
+      const originalSentences = (original.match(/\.\s+|\.$/g) || []).length;
+      const resultSentences = (result.match(/\.\s+|\.$/g) || []).length;
+      expect(resultSentences).toBe(originalSentences);
       
       // Should preserve non-PII words
       expect(result).toContain('Contact');
