@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "rollup": "@rollup/wasm-node",
     },
+  },
+  optimizeDeps: {
+    exclude: ["@rollup/wasm-node"],
   },
 }));
