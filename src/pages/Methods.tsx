@@ -1,10 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/Header";
 import { CCICalculation } from "@/components/methods/CCICalculation";
-import { BootstrapVisualizer } from "@/components/methods/BootstrapVisualizer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, Lock, BarChart3, AlertTriangle, Clock, Globe, Database } from "lucide-react";
+
+// Lazy load the heavy chart component
+const BootstrapVisualizer = lazy(() => import("@/components/methods/BootstrapVisualizer").then(module => ({ default: module.BootstrapVisualizer })));
+
+// Loading fallback for charts
+const ChartLoader = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="text-center space-y-4">
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+      <p className="text-sm text-muted-foreground">Loading visualization...</p>
+    </div>
+  </div>
+);
 
 export default function MethodsPage() {
   useEffect(() => {
@@ -125,7 +137,9 @@ export default function MethodsPage() {
               <h2 className="text-3xl font-bold">Bootstrap Confidence Intervals</h2>
             </div>
             
-            <BootstrapVisualizer />
+            <Suspense fallback={<ChartLoader />}>
+              <BootstrapVisualizer />
+            </Suspense>
             
             <div className="mt-8 grid md:grid-cols-2 gap-6">
               <Card className="bg-gray-900 border-gray-700">

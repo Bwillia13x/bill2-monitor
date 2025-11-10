@@ -20,4 +20,31 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     exclude: ["@rollup/wasm-node"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large chart library into separate chunk
+          'recharts-vendor': ['recharts'],
+          // Split carousel library
+          'carousel-vendor': ['embla-carousel-react'],
+          // Split large UI framework components
+          'radix-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+          // Core React libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Supabase and query
+          'data-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
+        },
+      },
+    },
+    // Increase chunk size warning limit since we're using code splitting
+    chunkSizeWarningLimit: 500,
+  },
 }));
