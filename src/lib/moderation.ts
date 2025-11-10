@@ -92,6 +92,8 @@ const PII_PATTERNS = {
   // Specific dates that could identify individuals (e.g., "September 15, 2023")
   specificDate: /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g,
   // Alberta-specific locations with ", Alberta" suffix - should always be redacted
+  // Note: Only escaping dots because city names don't contain regex metacharacters except '.'
+  // ALBERTA_CITIES is a controlled constant, not user input
   albertaLocationWithSuffix: new RegExp(`\\b(?:${ALBERTA_CITIES.join('|').replace(/\./g, '\\.')})(?:,\\s*(?:AB|Alberta))\\b`, 'g'),
   // Alberta-specific locations (cities/towns) - context-aware
   // Only match when followed by identifying context (address, postal code, school name)
