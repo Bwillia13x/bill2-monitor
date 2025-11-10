@@ -17,7 +17,7 @@ import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { logSignalSubmission } from "@/lib/integrity/merkleChainDB";
+import { logSignalSubmission } from "@/lib/merkleClient";
 
 // Mock data - in production this would come from the database
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
@@ -104,14 +104,19 @@ export default function V3IndexRefined() {
       // Log to Merkle chain for integrity tracking
       try {
         const signalId = crypto.randomUUID();
-        await logSignalSubmission(
+        const result = await logSignalSubmission(
           signalId,
           data.district || 'Unknown',
           'Unknown', // tenure not collected in V3
           data.satisfaction,
           data.exhaustion
         );
-        console.log("Signal logged to Merkle chain:", signalId);
+        
+        if (result.success) {
+          console.log("Signal logged to Merkle chain:", signalId);
+        } else {
+          console.warn("Merkle logging failed (non-critical):", result.error);
+        }
       } catch (merkleError) {
         console.error("Failed to log to Merkle chain:", merkleError);
         // Don't fail the submission if Merkle logging fails
