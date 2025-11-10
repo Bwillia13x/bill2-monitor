@@ -12,14 +12,17 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup Node.js
+    - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: ${{ matrix.node-version }}
         cache: 'npm'
     
     - name: Install dependencies
@@ -29,18 +32,63 @@ jobs:
       run: npm run lint
       continue-on-error: true
     
-    - name: Run tests
-      run: npm test
-      continue-on-error: true
+    - name: Run tests with coverage
+      run: npm run test:coverage
       env:
-        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://hshddfrqpyjenatftqpv.supabase.co' }}
-        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_BACKEND_MODE: mock
+        VITE_MERKLE_LOGGING_ENABLED: true
+        # No Supabase credentials - tests run offline
+    
+    - name: Check test pass rate
+      run: |
+        # Extract pass rate from test output
+        TEST_OUTPUT=$(npm test 2>&1)
+        echo "$TEST_OUTPUT"
+        
+        # Parse test results (format: "Tests  X failed | Y passed (Z)")
+        PASSED=$(echo "$TEST_OUTPUT" | grep -oP '\d+(?= passed)' | tail -1)
+        TOTAL=$(echo "$TEST_OUTPUT" | grep -oP '(?<=\()\d+(?=\))' | tail -1)
+        
+        if [ -n "$PASSED" ] && [ -n "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
+          PASS_RATE=$(awk "BEGIN {printf \"%.1f\", ($PASSED / $TOTAL) * 100}")
+          echo "Pass rate: $PASS_RATE% ($PASSED/$TOTAL)"
+          
+          # Fail if below 90%
+          if (( $(awk "BEGIN {print ($PASS_RATE < 90)}") )); then
+            echo "❌ Test pass rate $PASS_RATE% is below 90% threshold"
+            exit 1
+          else
+            echo "✅ Test pass rate $PASS_RATE% meets 90% threshold"
+          fi
+        else
+          echo "⚠️  Could not parse test results"
+          exit 1
+        fi
+    
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: matrix.node-version == 20
+      with:
+        name: coverage-report-node-${{ matrix.node-version }}
+        path: coverage/
+        retention-days: 30
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          coverage/
+          test-results/
+        retention-days: 7
     
     - name: Build project
       run: npm run build
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
+      if: matrix.node-version == 20
       with:
         name: build-dist
         path: dist/
