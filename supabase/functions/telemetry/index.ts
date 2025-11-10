@@ -36,28 +36,61 @@ interface ErrorReport {
 // Validation functions
 function isValidTelemetryEvent(event: unknown): event is TelemetryEvent {
   const e = event as TelemetryEvent;
+  const METRIC_WHITELIST = ["LCP", "FCP", "INP", "CLS", "TTFB"];
+  const now = Date.now();
+  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
   return (
     typeof e.session_id === "string" &&
+    e.session_id.length > 0 &&
+    e.session_id.length <= 100 &&
     typeof e.ts === "number" &&
+    Number.isFinite(e.ts) &&
+    Math.abs(e.ts - now) < ONE_YEAR_MS &&
     typeof e.metric === "string" &&
+    METRIC_WHITELIST.includes(e.metric) &&
     typeof e.value === "number" &&
+    Number.isFinite(e.value) &&
+    Math.abs(e.value) < 1e9 &&
     ["good", "needs-improvement", "poor"].includes(e.rating) &&
     typeof e.url === "string" &&
+    e.url.length > 0 &&
+    e.url.length <= 500 &&
     typeof e.device === "string" &&
-    typeof e.app_version === "string"
+    e.device.length > 0 &&
+    e.device.length <= 100 &&
+    typeof e.app_version === "string" &&
+    e.app_version.length > 0 &&
+    e.app_version.length <= 50
   );
 }
 
 function isValidErrorReport(error: unknown): error is ErrorReport {
   const e = error as ErrorReport;
+  const now = Date.now();
+  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
   return (
     typeof e.session_id === "string" &&
+    e.session_id.length > 0 &&
+    e.session_id.length <= 100 &&
     typeof e.ts === "number" &&
+    Number.isFinite(e.ts) &&
+    Math.abs(e.ts - now) < ONE_YEAR_MS &&
     typeof e.message === "string" &&
+    e.message.length > 0 &&
+    e.message.length <= 1000 &&
     typeof e.stack_hash === "string" &&
+    e.stack_hash.length > 0 &&
+    e.stack_hash.length <= 100 &&
     typeof e.app_version === "string" &&
+    e.app_version.length > 0 &&
+    e.app_version.length <= 50 &&
     typeof e.url === "string" &&
-    typeof e.device === "string"
+    e.url.length > 0 &&
+    e.url.length <= 500 &&
+    typeof e.device === "string" &&
+    e.device.length > 0 &&
+    e.device.length <= 100 &&
+    (e.stack === undefined || (typeof e.stack === "string" && e.stack.length <= 5000))
   );
 }
 
