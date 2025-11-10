@@ -39,8 +39,9 @@ const PII_PATTERNS = {
   email: /\b[A-Za-zÀ-ÿ0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
   // Student IDs, employee IDs - more specific patterns (moved up to process before phone numbers)
   employeeId: /\b(EMP|STF|STAFF)[-\s]?\d{5,10}\b/gi,
-  studentId: /\b(?:Student\s+)?ID[:\s]+\d{5,10}\b/gi,
-  studentIdAlt: /\b(STU|STUDENT)[-\s]\d{5,10}\b/gi,
+  // Student ID patterns - match the number, not the label
+  studentIdWithLabel: /\b(?:Student\s+)?ID:\s*(\d{5,10})\b/gi,
+  studentId: /\b(STU|STUDENT)[-\s]\d{5,10}\b/gi,
   // Phone patterns - more specific to avoid matching dates
   // 7-digit local format: XXX-XXXX
   phoneLocal: /\b\d{3}[-.\s]\d{4}\b/g,
@@ -62,6 +63,10 @@ const PII_PATTERNS = {
   url: /https?:\/\/[^\s]+/g,
   // School names - need to capture city prefix (e.g., "Calgary Elementary No. 23")
   schoolWithCityAndNumber: /\b[A-Z][a-z]+\s+(?:Elementary|Junior|High|Secondary|Composite|School)(?:\s+School)?\s+No\.\s*\d+\b/g,
+  // Board of Education patterns
+  schoolBoard: /\b[A-Z][a-z]+\s+(?:Board\s+of\s+Education|Public\s+Schools?)(?:\s+School\s+No\.\s*\d+|-\s+[A-Z][a-z]+|\s+facility)?\b/g,
+  // CBE/other abbreviation patterns
+  schoolAbbreviation: /\b[A-Z]{2,}\s+(?:Elementary|Junior|High|Secondary|School|Composite)\s+(?:School\s+)?No\.\s*\d+\b/g,
   // School names often follow pattern - including suffix variations
   school: /\b[A-Z][a-z]+\s+(Elementary|Junior|High|Secondary|School|College|University|Academy|Institute)(?:\s+(?:No\.\s*\d+|School))?\b/g,
   // Alberta-specific school patterns - more comprehensive
@@ -119,10 +124,10 @@ function containsBlockedContentContext(text: string): boolean {
   
   // Check regex patterns for coordinated action
   const actionPatterns = [
-    /organize\s+(?:a\s+)?(?:strike|walkout|protest)/i,
-    /plan\s+(?:the\s+)?(?:strike|walkout)/i,
+    /organize\s+(?:a\s+)?(?:strike|walkout|walk\s+out|protest)/i,
+    /plan\s+(?:the\s+)?(?:strike|walkout|walk\s+out)/i,
     /strike\s+(?:now|action)/i,
-    /(?:walk|walking)\s+out\s+(?:at|on|tomorrow|next)/i,
+    /(?:walk|walking)\s+out\s+(?:at|on|tomorrow|next|for)/i,
     /everyone\s+(?:walk|walking)\s+out/i,
     /coordinate\s+(?:with|schools|teachers|action|protests?)/i,
     /illegal\s+action/i,
@@ -182,8 +187,13 @@ export function scrubPII(text: string): string {
   
   // Remove employee/student IDs (BEFORE phone numbers to avoid conflicts)
   scrubbed = scrubbed.replace(PII_PATTERNS.employeeId, "[id redacted]");
+  // Student ID with label - preserve the label but redact the number
+  scrubbed = scrubbed.replace(PII_PATTERNS.studentIdWithLabel, (match, number) => {
+    // Preserve "Student ID:" or "ID:" prefix
+    const prefix = match.substring(0, match.lastIndexOf(number));
+    return prefix + "[id redacted]";
+  });
   scrubbed = scrubbed.replace(PII_PATTERNS.studentId, "[id redacted]");
-  scrubbed = scrubbed.replace(PII_PATTERNS.studentIdAlt, "[id redacted]");
   
   // Remove phone numbers (in order of specificity to avoid conflicts)
   // First remove toll-free
@@ -211,6 +221,8 @@ export function scrubPII(text: string): string {
   scrubbed = scrubbed.replace(PII_PATTERNS.unitSuite, "[address redacted] ");
   
   // Remove school names (various patterns) - more specific patterns first
+  scrubbed = scrubbed.replace(PII_PATTERNS.schoolBoard, "[school name redacted]");
+  scrubbed = scrubbed.replace(PII_PATTERNS.schoolAbbreviation, "[school name redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.schoolWithCityAndNumber, "[school name redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.schoolWithNumber, "[school name redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.school, "[school name redacted]");
