@@ -332,7 +332,8 @@ class TelemetryService {
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const success = navigator.sendBeacon(endpoint, blob);
       if (!success) {
-        throw new Error('sendBeacon failed');
+        console.warn('[Telemetry] sendBeacon failed (likely due to browser constraints, not network error). Telemetry data dropped.');
+        return;
       }
       return;
     }
