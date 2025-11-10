@@ -24,11 +24,11 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split large chart library into separate chunk
+          // Split large chart library into separate chunk (lazy loaded via Methods.tsx)
           'recharts-vendor': ['recharts'],
           // Split carousel library
           'carousel-vendor': ['embla-carousel-react'],
-          // Split large UI framework components
+          // Split large UI framework components (most commonly used in the app)
           'radix-vendor': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',
@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    // Increase chunk size warning limit since we're using code splitting
-    chunkSizeWarningLimit: 500,
+    // Lower chunk size warning limit to match CI budget (300 KB)
+    chunkSizeWarningLimit: 300,
   },
 }));

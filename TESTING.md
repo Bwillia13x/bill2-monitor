@@ -51,7 +51,8 @@ npm run bundle:check
 ### CI Bundle Budget
 
 In CI, bundle checks enforce:
-- ✅ All application chunks ≤ 300 KB
+- ✅ All non-vendor chunks ≤ 300 KB
+- ✅ Vendor chunks allowed to exceed limit (lazy loaded)
 - ✅ Lazy loading detected in App.tsx
 - ✅ Suspense boundaries present
 - ❌ Fails if violations found

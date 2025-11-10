@@ -6,13 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Shield, Lock, BarChart3, AlertTriangle, Clock, Globe, Database } from "lucide-react";
 
 // Lazy load the heavy chart component
-const BootstrapVisualizer = lazy(() => import("@/components/methods/BootstrapVisualizer").then(module => ({ default: module.BootstrapVisualizer })));
+const BootstrapVisualizer = lazy(() => import("@/components/methods/BootstrapVisualizer").then(({ BootstrapVisualizer }) => ({ default: BootstrapVisualizer })));
 
 // Loading fallback for charts
 const ChartLoader = () => (
-  <div className="flex items-center justify-center p-12">
+  <div className="flex items-center justify-center p-12" role="status" aria-live="polite">
     <div className="text-center space-y-4">
-      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto" aria-hidden="true"></div>
       <p className="text-sm text-muted-foreground">Loading visualization...</p>
     </div>
   </div>

@@ -85,7 +85,8 @@ const PII_PATTERNS = {
   creditCard: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
   // License numbers with various formats - handle "License number DL-123" and "License: DL-123"
   // Capture the prefix to preserve it in the output
-  licenseNumber: /\b((?:License|Lic)(?:\s+number)?(?:\s*#)?[:\s]+)(?:DL[-\s]?)?[A-Z]{0,2}-?\d{6,12}\b/gi,
+  // Require either DL- prefix or at least one letter to avoid matching pure numeric IDs (e.g., SIN)
+  licenseNumber: /\b((?:License|Lic)(?:\s+number)?(?:\s*#)?[:\s]+)(?:DL[-\s]?[A-Z0-9]{6,12}|[A-Z]{1,2}-?\d{6,12})\b/gi,
   // Driver license format: DL-123456789 (standalone)
   driverLicense: /\bDL[-\s]?\d{6,12}\b/gi,
   // Postal codes (Canadian) - with word boundaries
