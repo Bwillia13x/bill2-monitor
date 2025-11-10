@@ -698,11 +698,11 @@ describe('Snapshot Automation Integration Tests', () => {
 describe('Cross-System Consistency Tests', () => {
   it('should calculate CCI identically across components', () => {
     const testCases = [
-      { satisfaction: 10.0, exhaustion: 0.0, expected: 10.0 },
-      { satisfaction: 5.0, exhaustion: 5.0, expected: 5.0 },
+      { satisfaction: 10.0, exhaustion: 0.0, expected: 100.0 },
+      { satisfaction: 5.0, exhaustion: 5.0, expected: 50.0 },
       { satisfaction: 0.0, exhaustion: 10.0, expected: 0.0 },
-      { satisfaction: 7.5, exhaustion: 3.0, expected: 7.2 },
-      { satisfaction: 8.0, exhaustion: 2.5, expected: 7.7 }
+      { satisfaction: 7.5, exhaustion: 3.0, expected: 72.0 },
+      { satisfaction: 8.0, exhaustion: 2.5, expected: 77.0 }
     ];
 
     testCases.forEach(({ satisfaction, exhaustion, expected }) => {

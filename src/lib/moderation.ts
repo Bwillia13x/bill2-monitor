@@ -17,8 +17,9 @@ const TEMPORAL_PATTERNS = {
 const PII_PATTERNS = {
   email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
   // Phone patterns - more specific to avoid matching dates
-  // NANP format: (XXX) XXX-XXXX or XXX-XXX-XXXX or XXX.XXX.XXXX
-  phoneNANP: /\b(?:\+?1[-.\s]?)?\(?[2-9]\d{2}\)?[-.\s]?[2-9]\d{2}[-.\s]?\d{4}\b/g,
+  // NANP format: (XXX) XXX-XXXX or XXX-XXX-XXXX or XXX.XXX.XXXX  
+  // Negative lookbehind to exclude ISO dates (YYYY-MM-DD)
+  phoneNANP: /(?<!\d{4}-)(?<!\d-)\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)/g,
   // E.164 format: +1XXXXXXXXXX
   phoneE164: /\b\+1[2-9]\d{9}\b/g,
   // International format with country code
