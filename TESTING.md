@@ -53,17 +53,19 @@ VITE_BACKEND_MODE=live npm test
 ```
 tests/
 ├── setup.ts                 # Global test configuration & mocks
-├── privacy.test.ts          # PII detection, scrubbing, privacy thresholds (140 tests)
+├── privacy.test.ts          # PII detection, scrubbing, privacy thresholds (143 tests)
 ├── integrity.test.ts        # Merkle chain, snapshots, audit trails (102 tests)
 ├── merkleClient.test.ts     # Merkle client retry logic, feature flags (21 tests)
+├── telemetry.test.ts        # Web Vitals & error reporting (11 tests)
 └── smoke.test.ts            # Basic sanity checks
 ```
 
 ## Current Test Metrics
 
-- **Total Tests**: 263
-- **Passing**: 249 (94.7%)
-- **Privacy Tests**: 136/140 passing (97.1%)
+- **Total Tests**: 280
+- **Passing**: 267 (95.4%)
+- **Privacy Tests**: 139/143 passing (97.2%)
+- **Telemetry Tests**: 11/11 passing (100%)
 - **Integrity Tests**: 91/102 passing (89.2%)
 - **Merkle Client**: 21/21 passing (100%)
 - **Network Calls**: 0 (fully offline)
@@ -333,6 +335,75 @@ if [ $PASS_RATE -lt 90 ]; then
   echo "❌ Pass rate $PASS_RATE% < 90%"
   exit 1
 fi
+```
+
+## Performance & Bundle Testing
+
+### Bundle Size Checks
+
+Monitor and enforce bundle size budgets:
+
+```bash
+# Build and analyze bundle sizes
+npm run bundle:check
+
+# Just analyze existing build
+npm run bundle:report
+```
+
+**Budget**: JavaScript chunks should be < 300 KB (uncompressed)
+
+**What it checks:**
+- Individual chunk sizes
+- Total bundle size
+- Code splitting effectiveness  
+- Lazy loading detection
+
+**Example output:**
+```
+📦 Bundle Size Report
+────────────────────────────────────────────────────────────
+File                                             Size     Type
+────────────────────────────────────────────────────────────
+❌ index-D4fdifCP.js                           653.55 KB   JS
+❌ Methods-CLyRMTo3.js                         398.43 KB   JS
+✅ Voices-CjBoYosh.js                          124.47 KB   JS
+...
+
+📊 Summary:
+   Total chunks: 40
+   JavaScript: 1.44 MB (34 files)
+   
+⚠️ JavaScript budget violations: 2 JS chunks exceed 300KB
+
+🔍 Code Splitting Check:
+   Lazy loading: ✅ Detected
+   Suspense: ✅ Detected
+```
+
+### Web Vitals Synthetic Testing
+
+Test Web Vitals collection in offline mode:
+
+```bash
+# Run telemetry tests
+npm test tests/telemetry.test.ts
+```
+
+**Tests verify:**
+- URL scrubbing (removes query params, hash)
+- Path truncation (max 3 segments)
+- Error stack sanitization
+- Buffering and flush logic
+- Retry with exponential backoff
+- Circuit breaker functionality
+- PII removal from error context
+
+**Example:**
+```typescript
+// URL scrubbing test
+Input:  https://example.com/a/b/c/d?secret=123#section
+Output: https://example.com/a/b/c/...
 ```
 
 ## Troubleshooting

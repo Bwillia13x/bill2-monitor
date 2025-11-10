@@ -276,7 +276,7 @@ rateLimitService.clearHistory();
 ```json
 {
   "dependencies": {
-    "web-vitals": "^4.2.4"
+    "web-vitals": "^5.1.0"
   }
 }
 ```

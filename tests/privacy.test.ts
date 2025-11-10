@@ -38,6 +38,12 @@ const TEST_PII_CASES = [
     shouldDetect: true
   },
   {
+    name: 'UK phone numbers',
+    input: 'UK contact: +44 20 7123 4567',
+    expected: 'UK contact: [phone redacted]',
+    shouldDetect: true
+  },
+  {
     name: 'URLs and links',
     input: 'Visit https://example.com or http://test.org for info',
     expected: 'Visit [link redacted] or [link redacted] for info',
@@ -71,6 +77,18 @@ const TEST_PII_CASES = [
     name: 'ID numbers',
     input: 'Student ID: 1234567890',
     expected: 'Student ID: [id redacted]',
+    shouldDetect: true
+  },
+  {
+    name: 'SIN with spaces',
+    input: 'My SIN is 123 456 789',
+    expected: 'My SIN is [id redacted]',
+    shouldDetect: true
+  },
+  {
+    name: 'Driver license format',
+    input: 'License number DL-123456789',
+    expected: 'License number [id redacted]',
     shouldDetect: true
   },
   {
@@ -178,6 +196,26 @@ describe('Privacy Test Suite', () => {
       const cleanText = 'The working conditions are reasonable and manageable.';
       const result = scrubPII(cleanText);
       expect(result).toBe(cleanText);
+    });
+
+    it('should not redact generic city mentions without address context', () => {
+      const genericText = 'I visited Calgary last year and enjoyed it';
+      const result = scrubPII(genericText);
+      expect(result).toBe(genericText);
+      expect(result).not.toContain('[location redacted]');
+    });
+
+    it('should not redact city in general discussion', () => {
+      const generalText = 'Teachers in Calgary face many challenges';
+      const result = scrubPII(generalText);
+      expect(result).toBe(generalText);
+    });
+
+    it('should redact city when followed by address markers', () => {
+      const addressText = 'Located in Calgary, Alberta';
+      const result = scrubPII(addressText);
+      expect(result).toContain('[location redacted]');
+      expect(result).not.toContain('Calgary');
     });
   });
 

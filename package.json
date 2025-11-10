@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "bundle:report": "node scripts/bundle-report.mjs",
+    "bundle:check": "npm run build && npm run bundle:report",
     "automation:nightly-signing": "tsx scripts/nightlySigning.ts",
     "automation:weekly-snapshot": "tsx scripts/weeklySnapshot.ts",
     "automation:retention-cleanup": "tsx scripts/retentionCleanup.ts"
