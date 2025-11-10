@@ -123,7 +123,14 @@ class TelemetryService {
   }
 
   private generateSessionId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Use crypto.randomUUID for secure random session ID
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    // Fallback for older browsers - still better than Math.random alone
+    return `${Date.now()}-${Array.from(crypto.getRandomValues(new Uint8Array(8)))
+      .map(b => b.toString(36))
+      .join('')}`;
   }
 
   private setupFlushHandlers(): void {
