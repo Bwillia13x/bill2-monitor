@@ -3,7 +3,6 @@
  * Stores events in Supabase for persistence and auditability
  */
 
-import { createHash } from 'crypto';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MerkleEvent {
@@ -13,6 +12,25 @@ export interface MerkleEvent {
   data: any;
   previousHash: string;
   currentHash: string;
+}
+
+/**
+ * Browser-compatible SHA-256 hashing
+ */
+async function hashData(data: any): Promise<string> {
+  const dataString = JSON.stringify(data, Object.keys(data).sort());
+  const encoder = new TextEncoder();
+  const dataBuffer = encoder.encode(dataString);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Generate unique event ID
+ */
+function generateEventId(): string {
+  return crypto.randomUUID().substring(0, 16);
 }
 
 /**
@@ -34,13 +52,13 @@ export class MerkleChainDB {
       
       // Create hash of current event data
       const timestamp = new Date().toISOString();
-      const eventDataHash = this.hashData({ eventType, timestamp, data });
+      const eventDataHash = await hashData({ eventType, timestamp, data });
       
       // Create current hash by combining previous hash and event data hash
-      const currentHash = this.hashData({ previousHash, eventDataHash });
+      const currentHash = await hashData({ previousHash, eventDataHash });
       
       // Generate event ID
-      const eventId = this.generateEventId();
+      const eventId = generateEventId();
       
       // Store in database
       const { data: dbEvent, error } = await supabase.rpc('add_merkle_event', {
@@ -203,24 +221,6 @@ export class MerkleChainDB {
       console.error('Failed to get recent events:', error);
       return [];
     }
-  }
-
-  /**
-   * Generate cryptographic hash of data
-   */
-  private hashData(data: any): string {
-    const dataString = JSON.stringify(data, Object.keys(data).sort());
-    return createHash('sha256').update(dataString).digest('hex');
-  }
-
-  /**
-   * Generate unique event ID
-   */
-  private generateEventId(): string {
-    return createHash('sha256')
-      .update(`${Date.now()}-${Math.random()}`)
-      .digest('hex')
-      .substring(0, 16);
   }
 }
 

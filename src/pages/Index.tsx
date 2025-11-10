@@ -17,6 +17,7 @@ import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logSignalSubmission } from "@/lib/integrity/merkleChainDB";
 
 // Mock data - in production this would come from the database
 const TARGET_DATE = new Date("2028-08-31T06:00:00Z");
@@ -99,6 +100,22 @@ export default function V3IndexRefined() {
       }
 
       console.log("CCI submission successful:", data);
+      
+      // Log to Merkle chain for integrity tracking
+      try {
+        const signalId = crypto.randomUUID();
+        await logSignalSubmission(
+          signalId,
+          data.district || 'Unknown',
+          'Unknown', // tenure not collected in V3
+          data.satisfaction,
+          data.exhaustion
+        );
+        console.log("Signal logged to Merkle chain:", signalId);
+      } catch (merkleError) {
+        console.error("Failed to log to Merkle chain:", merkleError);
+        // Don't fail the submission if Merkle logging fails
+      }
       
       // Generate referral code
       const code = "CCI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
