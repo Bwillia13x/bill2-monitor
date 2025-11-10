@@ -7,12 +7,32 @@ const PROFANITY_LIST = [
 ];
 
 // Temporal patterns to exclude from PII detection
+// Note: No global flag to avoid stateful regex issues with .test()
 const TEMPORAL_PATTERNS = {
-  isoDate: /\b\d{4}-\d{2}-\d{2}\b/g,
-  isoDateTime: /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\b/g,
-  time: /\b\d{1,2}:\d{2}(?::\d{2})?\b/g,
-  year: /\b(19|20)\d{2}\b/g,
+  isoDate: /\b\d{4}-\d{2}-\d{2}\b/,
+  isoDateTime: /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?\b/,
+  time: /\b\d{1,2}:\d{2}(?::\d{2})?\b/,
+  year: /\b(19|20)\d{2}\b/,
 };
+
+// Alberta cities and towns for location redaction
+const ALBERTA_CITIES = [
+  'Edmonton', 'Calgary', 'Red Deer', 'Lethbridge', 'Medicine Hat',
+  'Grande Prairie', 'Airdrie', 'Spruce Grove', 'Leduc', 'Fort McMurray',
+  'St. Albert', 'Sherwood Park', 'Okotoks', 'Cochrane', 'Chestermere',
+  'Camrose', 'Brooks', 'Cold Lake', 'Wetaskiwin', 'Lacombe',
+  'High River', 'Sylvan Lake', 'Beaumont', 'Lloydminster', 'Canmore',
+  'Stony Plain', 'Strathmore', 'Devon', 'Hinton', 'Jasper',
+  'Banff', 'Drumheller', 'Olds', 'Innisfail', 'Ponoka',
+  'Taber', 'Peace River', 'Slave Lake', 'Whitecourt', 'Drayton Valley',
+  'Athabasca', 'Edson', 'Provost', 'Vegreville', 'Vermilion',
+  'Wainwright', 'Morinville', 'Penhold', 'Blackfalds', 'Coaldale',
+  'Picture Butte', 'Raymond', 'Magrath', 'Cardston', 'Pincher Creek',
+  'Claresholm', 'Nanton', 'Vulcan', 'Three Hills', 'Didsbury',
+  'Carstairs', 'Crossfield', 'Beiseker', 'Irricana', 'Bassano',
+  'Rosemary', 'Bow Island', 'Redcliff', 'Foremost', 'Milk River',
+  'Coutts', 'Warner', 'Stirling', 'Barnwell', 'Vauxhall'
+];
 
 const PII_PATTERNS = {
   email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
@@ -46,8 +66,10 @@ const PII_PATTERNS = {
   poBox: /\bP\.?O\.?\s*Box\s+\d+\b/gi,
   ruralRoute: /\bR\.?R\.?\s*\d+(?:,?\s*Site\s+\d+)?(?:,?\s*Box\s+\d+)?\b/gi,
   unitSuite: /\b(?:Unit|Suite|Apt|Apartment|#)\s*\d+[-,]?\s*/gi,
-  // Alberta-specific locations (cities/towns)
-  albertaLocation: /\b(?:Edmonton|Calgary|Red Deer|Lethbridge|Medicine Hat|Grande Prairie|Airdrie|Spruce Grove|Leduc|Fort McMurray|St\. Albert|Sherwood Park|Okotoks|Cochrane|Chestermere|Camrose|Brooks|Cold Lake|Wetaskiwin|Lacombe|High River|Sylvan Lake|Beaumont|Lloydminster|Canmore|Stony Plain|Strathmore|Devon|Hinton|Jasper|Banff|Drumheller|Olds|Innisfail|Ponoka|Taber|Peace River|Slave Lake|Whitecourt|Drayton Valley|Athabasca|Edson|Provost|Vegreville|Vermilion|Wainwright|Morinville|Penhold|Blackfalds|Coaldale|Picture Butte|Raymond|Magrath|Cardston|Pincher Creek|Claresholm|Nanton|Vulcan|Three Hills|Didsbury|Carstairs|Crossfield|Beiseker|Irricana|Strathmore|Bassano|Rosemary|Bow Island|Redcliff|Foremost|Milk River|Coutts|Warner|Stirling|Barnwell|Vauxhall)(?:,?\s*(?:AB|Alberta))?\b/g,
+  // Alberta-specific locations (cities/towns) - dynamically constructed
+  get albertaLocation() {
+    return new RegExp(`\\b(?:${ALBERTA_CITIES.join('|').replace(/\./g, '\\.')})(?:,?\\s*(?:AB|Alberta))?\\b`, 'g');
+  }
 };
 
 const BLOCKED_CONTENT = [
