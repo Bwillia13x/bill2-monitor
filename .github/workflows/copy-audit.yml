@@ -1,0 +1,40 @@
+name: Copy Audit
+
+on:
+  push:
+    branches: [ main, develop, 'copilot/*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  audit-copy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Copy Audit
+      run: npx tsx scripts/auditCopy.ts
+      continue-on-error: true
+    
+    - name: Upload Audit Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: copy-audit-results
+        path: |
+          copy-audit-*.json
+          copy-audit-*.txt
+        retention-days: 30

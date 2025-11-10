@@ -1,0 +1,123 @@
+name: Scheduled Automation Tasks
+
+on:
+  schedule:
+    # Nightly signing - 2:00 AM MST (9:00 AM UTC)
+    - cron: '0 9 * * *'
+    # Weekly snapshot - Monday 2:00 AM MST (9:00 AM UTC)
+    - cron: '0 9 * * 1'
+    # Data retention cleanup - 3:00 AM MST (10:00 AM UTC)
+    - cron: '0 10 * * *'
+  workflow_dispatch: # Allow manual triggering
+    inputs:
+      task:
+        description: 'Task to run'
+        required: true
+        type: choice
+        options:
+          - nightly-signing
+          - weekly-snapshot
+          - retention-cleanup
+          - all
+
+permissions:
+  contents: read
+
+jobs:
+  nightly-signing:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * *' || github.event.inputs.task == 'nightly-signing' || github.event.inputs.task == 'all'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Nightly Signing
+      run: npm run automation:nightly-signing
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+        VITE_SIGNING_KEY_SEED: ${{ secrets.VITE_SIGNING_KEY_SEED }}
+    
+    - name: Upload signing logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly-signing-logs
+        path: |
+          *.log
+        retention-days: 30
+
+  weekly-snapshot:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 9 * * 1' || github.event.inputs.task == 'weekly-snapshot' || github.event.inputs.task == 'all'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Weekly Snapshot
+      run: npm run automation:weekly-snapshot
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+    
+    - name: Upload snapshot artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: weekly-snapshot
+        path: |
+          snapshots/**/*
+          *.log
+        retention-days: 365
+
+  retention-cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 10 * * *' || github.event.inputs.task == 'retention-cleanup' || github.event.inputs.task == 'all'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run Data Retention Cleanup
+      run: npm run automation:retention-cleanup
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        VITE_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.VITE_SUPABASE_SERVICE_ROLE_KEY }}
+    
+    - name: Upload cleanup logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: retention-cleanup-logs
+        path: |
+          *.log
+        retention-days: 30
