@@ -54,7 +54,6 @@ export default function V3IndexRefined() {
   const cciValue = cciData?.cci ?? 47.6;
   const cciChange = cciData?.cci_change_1d ?? null;
   const totalN = cciData?.total_n ?? 1284;
-  const isSuppressed = cciData?.isSuppressed ?? false;
 
   const [signalNumber, setSignalNumber] = useState(totalN);
   const [todayCount, setTodayCount] = useState(MOCK_VELOCITY[MOCK_VELOCITY.length - 1]);
@@ -186,7 +185,6 @@ export default function V3IndexRefined() {
               onSubmitClick={() => setSubmitModalOpen(true)}
               onShareClick={handleShareClick}
               onMethodologyClick={() => setMethodologyModalOpen(true)}
-              isSuppressed={isSuppressed}
             />
 
             {/* Social Proof Banner */}

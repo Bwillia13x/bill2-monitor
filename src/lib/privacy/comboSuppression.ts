@@ -55,7 +55,7 @@ export const SUPPRESSION_RULES: SuppressionRule[] = [
     ruleId: 'rule3',
     description: 'If (district + tenure) n < 20 → aggregate to (district only)',
     condition: ({ district, tenure, n }) => 
-      !!district && !!tenure && !subject && n < MIN_CELL_SIZE,
+      !!district && !!tenure && n < MIN_CELL_SIZE,
     action: 'aggregate_district_only',
     targetN: MIN_CELL_SIZE
   },

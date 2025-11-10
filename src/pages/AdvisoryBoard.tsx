@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BackgroundFX } from "@/components/BackgroundFX";
-import { Header } from "/Users/benjaminwilliams/bill2-monitor/src/components/Header.tsx";
+import { Header } from "@/components/Header";
 import { Banner } from "@/components/Banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

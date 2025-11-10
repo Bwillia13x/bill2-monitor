@@ -2,7 +2,6 @@
 // Creates comprehensive media packages for journalists and researchers
 
 import { supabase } from '@/integrations/supabase/client';
-import { getCCIAggregate } from '@/lib/metrics';
 import { advisoryBoardMembers } from '@/data/advisoryBoard';
 
 export interface PressKitData {
@@ -631,5 +630,4 @@ export async function batchAuditCopy(files: string[]): Promise<Map<string, {
   return results;
 }
 
-// Export types
-export type { PressKitData, CSVExportOptions, SnapshotData };
+// Types already exported above

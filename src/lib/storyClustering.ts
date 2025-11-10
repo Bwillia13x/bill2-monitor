@@ -276,4 +276,3 @@ export function clusterNewStory(story: { id: string; text: string; district?: st
 
 // Export themes for use in other parts of the application
 export { ALBERTA_EDUCATION_THEMES };
-export type { StoryCluster, ClusteredStory };

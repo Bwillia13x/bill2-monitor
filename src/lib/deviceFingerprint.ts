@@ -109,7 +109,7 @@ export async function getASNIdentifier(): Promise<string> {
     return hashString(data.ip || 'unknown');
   } catch {
     // Fallback: hash a combination of network-related properties
-    const networkInfo = `${navigator.connection?.effectiveType || ''}-${navigator.connection?.rtt || ''}`;
+    const networkInfo = `${(navigator as any).connection?.effectiveType || ''}-${(navigator as any).connection?.rtt || ''}`;
     return hashString(networkInfo || 'fallback-asn');
   }
 }
