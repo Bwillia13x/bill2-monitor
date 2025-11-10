@@ -20,6 +20,9 @@ on:
           - retention-cleanup
           - all
 
+permissions:
+  contents: read
+
 jobs:
   nightly-signing:
     runs-on: ubuntu-latest
