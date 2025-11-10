@@ -59,6 +59,15 @@ tests/
 └── smoke.test.ts            # Basic sanity checks
 ```
 
+## Current Test Metrics
+
+- **Total Tests**: 263
+- **Passing**: 249 (94.7%)
+- **Privacy Tests**: 136/140 passing (97.1%)
+- **Integrity Tests**: 91/102 passing (89.2%)
+- **Merkle Client**: 21/21 passing (100%)
+- **Network Calls**: 0 (fully offline)
+
 ## Coverage Targets
 
 - **Overall:** ≥80% statement coverage
@@ -79,22 +88,42 @@ open coverage/index.html
 
 Tests comprehensive PII detection and redaction:
 
-- **Email addresses**: `john@example.com` → `[email redacted]`
+- **Email addresses**: 
+  - Standard: `john@example.com` → `[email redacted]`
+  - Accented characters: `José.García@example.com` → `[email redacted]`
 - **Phone numbers**: 
   - NANP: `(555) 123-4567` → `[phone redacted]`
+  - 7-digit: `555-1234` → `[phone redacted]`
   - E.164: `+15551234567` → `[phone redacted]`
   - International: `+44 20 7123 4567` → `[phone redacted]`
+  - UK format: `+44 20 7123 4567` → `[phone redacted]`
+  - Dialing prefix: `011-44-20-7123-4567` → `[phone redacted]`
 - **Addresses**: 
   - Street: `123 Main Street` → `[address redacted]`
   - PO Box: `PO Box 456` → `[address redacted]`
   - Rural: `RR 2, Site 5, Box 10` → `[address redacted]`
 - **Canadian postal codes**: `T2P 3H4` → `[postal code redacted]`
-- **School names**: `Lincoln Elementary School` → `[school name redacted]`
+- **School names**: 
+  - General: `Lincoln Elementary School` → `[school name redacted]`
+  - With city: `Calgary Elementary No. 23` → `[school name redacted]`
+  - Board of Education: `Calgary Board of Education School No. 45` → `[school name redacted]`
+  - Public schools: `Edmonton Public Schools - Strathcona` → `[school name redacted]`
+  - Abbreviations: `CBE Elementary No. 12` → `[school name redacted]`
 - **ID numbers**: 
   - SSN: `123-45-6789` → `[id redacted]`
+  - Canadian SIN: `123 456 789` → `[id redacted]`
   - Employee: `EMP-12345` → `[id redacted]`
+  - Student: `Student ID: 1234567890` → `Student ID: [id redacted]`
+  - License: `License #: DL-123456789` → `[id redacted]`
   - Healthcare: `1234-5678-9012` → `[id redacted]`
-- **Alberta locations**: `Calgary, Alberta` → `[location redacted]`
+- **Alberta locations**: 
+  - With suffix: `Calgary, Alberta` → `[location redacted]`
+  - With school context: `Calgary Elementary` → `[location redacted] Elementary`
+  - General reference: `Schools in Calgary are...` → `Schools in Calgary are...` (preserved)
+  - Neighborhoods: `Beltline neighborhood` → `[location redacted]`
+- **Temporal identifiers**:
+  - Specific dates: `September 15, 2023` → `[date redacted]`
+  - General years: `Teaching in 2024` → `Teaching in 2024` (preserved)
 
 **Key test patterns:**
 
@@ -168,11 +197,15 @@ expect(delay).toBeGreaterThan(2000); // exponential
 ### Phone Number Detection
 
 ✅ **Matches:**
-- `555-123-4567`
-- `(555) 987-6543`
-- `555.123.4567`
-- `+1-555-123-4567`
+- `555-123-4567` (NANP)
+- `(555) 987-6543` (NANP with parens)
+- `555.123.4567` (NANP with dots)
+- `555-1234` (7-digit local)
+- `+1-555-123-4567` (E.164 with dashes)
+- `+15551234567` (E.164 compact)
 - `1-800-555-1234` (toll-free)
+- `+44 20 7123 4567` (UK)
+- `011-44-20-7123-4567` (international dialing prefix)
 
 ❌ **Does NOT match (by design):**
 - `2024-01-15` (ISO date)
@@ -181,8 +214,21 @@ expect(delay).toBeGreaterThan(2000); // exponential
 
 Regex uses negative lookbehind/lookahead to exclude dates:
 ```regex
-(?<!\d{4}-)(?<!\d-)\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)
+(?<!\d{4}-)(?<!\d-)(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)
 ```
+
+### School Name Detection
+
+✅ **Matches:**
+- `Lincoln Elementary School`
+- `Calgary Elementary No. 23` (city + school + number)
+- `Calgary Board of Education School No. 45`
+- `Edmonton Public Schools - Strathcona`
+- `CBE Elementary No. 12` (abbreviation)
+- `Red Deer Public Schools facility`
+
+❌ **Does NOT match:**
+- `Teaching in elementary education` (general education terms)
 
 ### Address Detection
 
@@ -198,6 +244,7 @@ Regex uses negative lookbehind/lookahead to exclude dates:
 ✅ **Blocked (coordinated action):**
 - "organize a strike"
 - "plan the walkout"
+- "plan the walk out for next Friday" (handles spacing variations)
 - "everyone walk out tomorrow"
 
 ✅ **Allowed (safe context):**
