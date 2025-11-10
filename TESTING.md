@@ -1,0 +1,410 @@
+# Testing Guide
+
+## Overview
+
+The Digital Strike test suite is designed to run **completely offline** with zero network dependencies. All external service calls (Supabase, DNS lookups, etc.) are mocked to ensure tests are fast, deterministic, and can run in CI environments without credentials.
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Run all tests (offline mode, default)
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests with UI
+npm run test:ui
+```
+
+## Environment Variables
+
+Tests use the following environment variables (all set automatically in test mode):
+
+| Variable | Default (Tests) | Description |
+|----------|-----------------|-------------|
+| `VITE_BACKEND_MODE` | `mock` | Backend mode: `mock` (no network) or `live` (real API calls) |
+| `VITE_MERKLE_LOGGING_ENABLED` | `true` | Enable/disable Merkle chain integrity logging |
+
+### Setting Environment Variables
+
+For local development, you can override these in `.env.test`:
+
+```bash
+# .env.test
+VITE_BACKEND_MODE=mock
+VITE_MERKLE_LOGGING_ENABLED=true
+```
+
+For production/live integration tests (NOT recommended in CI):
+
+```bash
+VITE_BACKEND_MODE=live npm test
+```
+
+## Test Organization
+
+```
+tests/
+├── setup.ts                 # Global test configuration & mocks
+├── privacy.test.ts          # PII detection, scrubbing, privacy thresholds (140 tests)
+├── integrity.test.ts        # Merkle chain, snapshots, audit trails (102 tests)
+├── merkleClient.test.ts     # Merkle client retry logic, feature flags (21 tests)
+└── smoke.test.ts            # Basic sanity checks
+```
+
+## Coverage Targets
+
+- **Overall:** ≥80% statement coverage
+- **Critical paths:** ≥90% coverage
+  - PII detection (`src/lib/moderation.ts`)
+  - Merkle client (`src/lib/merkleClient.ts`)
+  - Privacy enforcement (`src/lib/privacy/*`)
+
+View coverage report after running:
+```bash
+npm run test:coverage
+open coverage/index.html
+```
+
+## Test Categories
+
+### 1. Privacy & PII Tests (`privacy.test.ts`)
+
+Tests comprehensive PII detection and redaction:
+
+- **Email addresses**: `john@example.com` → `[email redacted]`
+- **Phone numbers**: 
+  - NANP: `(555) 123-4567` → `[phone redacted]`
+  - E.164: `+15551234567` → `[phone redacted]`
+  - International: `+44 20 7123 4567` → `[phone redacted]`
+- **Addresses**: 
+  - Street: `123 Main Street` → `[address redacted]`
+  - PO Box: `PO Box 456` → `[address redacted]`
+  - Rural: `RR 2, Site 5, Box 10` → `[address redacted]`
+- **Canadian postal codes**: `T2P 3H4` → `[postal code redacted]`
+- **School names**: `Lincoln Elementary School` → `[school name redacted]`
+- **ID numbers**: 
+  - SSN: `123-45-6789` → `[id redacted]`
+  - Employee: `EMP-12345` → `[id redacted]`
+  - Healthcare: `1234-5678-9012` → `[id redacted]`
+- **Alberta locations**: `Calgary, Alberta` → `[location redacted]`
+
+**Key test patterns:**
+
+```typescript
+// PII scrubbing
+const cleaned = scrubPII('Email john@example.com for info');
+expect(cleaned).toContain('[email redacted]');
+
+// Content moderation  
+const result = moderateContent('Plan the strike for Friday');
+expect(result.blocked).toBe(true);
+
+// Privacy threshold enforcement
+expect(aggregateData.n).toBeGreaterThanOrEqual(20);
+```
+
+### 2. Integrity Tests (`integrity.test.ts`)
+
+Tests data integrity, Merkle chain, and audit trails:
+
+- **Merkle chain**: Hash integrity, tampering detection
+- **Snapshots**: Weekly automation, hash verification
+- **CCI calculation**: Consistency across components
+  - Formula: `CCI = 10 × (0.4 × satisfaction + 0.6 × (10 − exhaustion))`
+  - Scale: 0-100 (not 0-10)
+- **Audit logging**: Complete event trails
+- **Rate limiting**: Device and ASN-based limits
+
+**Key test patterns:**
+
+```typescript
+// CCI calculation
+const cci = calculateCCI(7.5, 3.0); // satisfaction, exhaustion
+expect(cci).toBeCloseTo(72.0, 1); // 0-100 scale
+
+// Merkle chain integrity
+const chain = await buildMerkleChain(events);
+expect(chain.isValid).toBe(true);
+```
+
+### 3. Merkle Client Tests (`merkleClient.test.ts`)
+
+Tests the Merkle client adapter with retry logic:
+
+- **Feature flags**: Enable/disable logging, mock/live modes
+- **Retry logic**: Exponential backoff with jitter
+- **Error handling**: Retriable vs terminal errors
+- **Performance**: Concurrent submissions, batching
+
+**Key test patterns:**
+
+```typescript
+// Mock mode (default)
+const result = await logSignalSubmission(
+  'signal-123',
+  'Calgary',
+  '0-5 years',
+  7.5,
+  3.0,
+  { mode: 'mock' }
+);
+expect(result.success).toBe(true);
+
+// Retry logic
+const delay = calculateBackoffDelay(2, 500); // attempt, base delay
+expect(delay).toBeGreaterThan(2000); // exponential
+```
+
+## Known Patterns & Edge Cases
+
+### Phone Number Detection
+
+✅ **Matches:**
+- `555-123-4567`
+- `(555) 987-6543`
+- `555.123.4567`
+- `+1-555-123-4567`
+- `1-800-555-1234` (toll-free)
+
+❌ **Does NOT match (by design):**
+- `2024-01-15` (ISO date)
+- `12:34:56` (time)
+- `2023-12-25` (date)
+
+Regex uses negative lookbehind/lookahead to exclude dates:
+```regex
+(?<!\d{4}-)(?<!\d-)\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)
+```
+
+### Address Detection
+
+✅ **Matches:**
+- `123 Main Street NW`
+- `456 Oak Avenue`
+- `PO Box 789`
+- `RR 2, Site 5, Box 10`
+- `Unit 205, 789 Main St`
+
+### Content Moderation
+
+✅ **Blocked (coordinated action):**
+- "organize a strike"
+- "plan the walkout"
+- "everyone walk out tomorrow"
+
+✅ **Allowed (safe context):**
+- "strike a balance"
+- "walk out to your car"
+- "coordinate lesson plans"
+
+## Mocking Strategy
+
+### Supabase Client Mock
+
+All Supabase calls are mocked in `tests/setup.ts`:
+
+```typescript
+vi.mock('../src/integrations/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(() => mockChain),
+    rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    auth: { /* mock auth methods */ },
+  },
+}));
+```
+
+The mock supports full method chaining:
+```typescript
+supabase
+  .from('table')
+  .select('*')
+  .eq('field', 'value')
+  .order('created_at')
+  .limit(10)
+```
+
+### Crypto Mock
+
+Browser crypto API is mocked for Node.js environment:
+
+```typescript
+global.crypto = {
+  randomUUID: () => crypto.randomUUID(),
+  subtle: {
+    digest: async (algorithm, data) => {
+      const hash = crypto.createHash('sha256');
+      hash.update(Buffer.from(data));
+      return hash.digest().buffer;
+    },
+  },
+};
+```
+
+## Running Tests Offline
+
+**Tests are offline by default.** No configuration needed.
+
+To verify offline mode:
+```bash
+# Disconnect from internet, then:
+npm test
+
+# Or use network namespace (Linux):
+unshare -n npm test
+```
+
+All tests should pass without network connectivity.
+
+## CI/CD Integration
+
+### GitHub Actions
+
+The CI workflow (`.github/workflows/ci.yml`) runs tests with:
+
+- **Node versions**: 18, 20 (matrix)
+- **Coverage collection**: Vitest with v8 provider
+- **Pass rate enforcement**: Must be ≥90%
+- **Offline mode**: `VITE_BACKEND_MODE=mock`
+- **Artifacts**: Coverage reports, test results, build output
+
+### Pass Rate Check
+
+CI fails if test pass rate drops below 90%:
+
+```bash
+# Automated in CI
+PASS_RATE=$(calculate_from_test_output)
+if [ $PASS_RATE -lt 90 ]; then
+  echo "❌ Pass rate $PASS_RATE% < 90%"
+  exit 1
+fi
+```
+
+## Troubleshooting
+
+### "Network request detected in tests"
+
+**Cause**: Test is making a real network call instead of using mocks.
+
+**Fix**: Check that `VITE_BACKEND_MODE=mock` is set and Supabase mock is loaded.
+
+```bash
+# Verify env
+echo $VITE_BACKEND_MODE  # should be 'mock'
+
+# Check setup.ts is loaded
+grep "Mock Supabase" tests/setup.ts
+```
+
+### "Module not found" errors
+
+**Cause**: Path aliases not resolved.
+
+**Fix**: Ensure `vitest.config.ts` has correct path alias:
+
+```typescript
+resolve: {
+  alias: {
+    '@': path.resolve(__dirname, './src'),
+  },
+},
+```
+
+### "Expected X, got Y" in PII tests
+
+**Cause**: Regex pattern changed or new edge case.
+
+**Fix**: Check the specific pattern in `src/lib/moderation.ts`:
+
+```typescript
+// Example: phone number not matching
+const phoneRegex = /(?<!\d{4}-)(?<!\d-)\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)/g;
+```
+
+### Low coverage on new code
+
+**Cause**: New code added without tests.
+
+**Fix**: Add test cases covering new code paths:
+
+```typescript
+// src/lib/newFeature.ts
+export function newFunction(input: string): string {
+  return input.toUpperCase();
+}
+
+// tests/newFeature.test.ts
+describe('newFunction', () => {
+  it('should uppercase input', () => {
+    expect(newFunction('hello')).toBe('HELLO');
+  });
+});
+```
+
+## Performance Benchmarks
+
+Target performance for full test suite:
+
+- **Duration**: < 5 seconds
+- **Memory**: < 500 MB
+- **Tests**: 250+ tests
+- **Coverage**: ≥80%
+
+Current metrics (as of last run):
+- **Duration**: ~1.7 seconds
+- **Tests**: 263 total
+- **Pass rate**: 88.2% (232 passed, 31 failed)
+- **Coverage**: Collected via v8
+
+## Contributing
+
+When adding new tests:
+
+1. **Follow existing patterns**: Match style in `privacy.test.ts`, `integrity.test.ts`
+2. **Use descriptive names**: `should detect and redact PO Box addresses`
+3. **Test edge cases**: Empty strings, special characters, boundary conditions
+4. **Avoid network calls**: Use mocks, never hit real APIs
+5. **Document complex patterns**: Explain regex, algorithms in comments
+
+### Test Structure
+
+```typescript
+describe('Feature Name', () => {
+  describe('Sub-feature', () => {
+    it('should do specific thing', () => {
+      // Arrange
+      const input = 'test data';
+      
+      // Act
+      const result = functionUnderTest(input);
+      
+      // Assert
+      expect(result).toBe('expected output');
+    });
+  });
+});
+```
+
+## Additional Resources
+
+- [Vitest Documentation](https://vitest.dev/)
+- [Testing Library](https://testing-library.com/)
+- [CI/CD Workflow](.github/workflows/ci.yml)
+- [Coverage Report](coverage/index.html) (after running `npm run test:coverage`)
+
+## Support
+
+For questions or issues with tests:
+
+1. Check this guide first
+2. Review existing test files for examples
+3. Check CI logs for failure details
+4. Open an issue with test output and steps to reproduce
