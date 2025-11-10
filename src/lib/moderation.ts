@@ -35,30 +35,48 @@ const ALBERTA_CITIES = [
 ];
 
 const PII_PATTERNS = {
-  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+  // Email - now includes accented characters
+  email: /\b[A-Za-zÀ-ÿ0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+  // Student IDs, employee IDs - more specific patterns (moved up to process before phone numbers)
+  employeeId: /\b(EMP|STF|STAFF)[-\s]?\d{5,10}\b/gi,
+  studentId: /\b(?:Student\s+)?ID[:\s]+\d{5,10}\b/gi,
+  studentIdAlt: /\b(STU|STUDENT)[-\s]\d{5,10}\b/gi,
   // Phone patterns - more specific to avoid matching dates
+  // 7-digit local format: XXX-XXXX
+  phoneLocal: /\b\d{3}[-.\s]\d{4}\b/g,
   // NANP format: (XXX) XXX-XXXX or XXX-XXX-XXXX or XXX.XXX.XXXX  
   // Negative lookbehind to exclude ISO dates (YYYY-MM-DD)
-  phoneNANP: /(?<!\d{4}-)(?<!\d-)\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)/g,
-  // E.164 format: +1XXXXXXXXXX
-  phoneE164: /\b\+1[2-9]\d{9}\b/g,
-  // International format with country code
-  phoneInternational: /\b\+(?!1-?\d{3}-?\d{2}-?\d{2}\b)\d{1,3}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}\b/g,
+  // Now properly captures opening parenthesis
+  phoneNANP: /(?<!\d{4}-)(?<!\d-)(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b(?!-\d)/g,
+  // E.164 format: +1XXXXXXXXXX (includes the + sign)
+  phoneE164: /\+1[2-9]\d{9}\b/g,
+  // UK phone numbers: +44 followed by area code and number (includes the + sign)
+  phoneUK: /\+44\s*\d{2,4}\s*\d{4}\s*\d{4}/g,
+  // International dialing prefix format: 011-XX-XX-XXX-XXXX
+  phoneIntlDialing: /\b011[-.\s]\d{1,3}[-.\s]\d{1,4}[-.\s]\d{4}[-.\s]\d{4}\b/g,
+  // International format with country code (broader pattern for various countries)
+  // Now includes the + sign
+  phoneInternational: /\+(?!1\b)\d{1,4}(?:[-.\s]?\d{1,4}){1,4}\b/g,
   // Toll-free numbers
-  phoneTollFree: /\b1[-.\s]?(?:800|888|877|866|855|844|833)[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+  phoneTollFree: /(?:\+?1[-.\s]?)?(?:800|888|877|866|855|844|833)[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
   url: /https?:\/\/[^\s]+/g,
-  // School names often follow pattern
-  school: /\b[A-Z][a-z]+\s+(Elementary|Junior|High|Secondary|School|College|University|Academy|Institute)\b/g,
-  // Alberta-specific school patterns
-  albertaSchool: /\b[A-Z][a-z]+\s+(School|Elementary|Junior High|Senior High|Composite High|High School)\s+(No\.\s*\d+)?\b/g,
+  // School names - need to capture city prefix (e.g., "Calgary Elementary No. 23")
+  schoolWithCityAndNumber: /\b[A-Z][a-z]+\s+(?:Elementary|Junior|High|Secondary|Composite|School)(?:\s+School)?\s+No\.\s*\d+\b/g,
+  // School names often follow pattern - including suffix variations
+  school: /\b[A-Z][a-z]+\s+(Elementary|Junior|High|Secondary|School|College|University|Academy|Institute)(?:\s+(?:No\.\s*\d+|School))?\b/g,
+  // Alberta-specific school patterns - more comprehensive
+  albertaSchool: /\b(?:[A-Z][a-z]+\s+)?(?:Public\s+)?Schools?\s+(?:No\.\s*\d+|-\s*[A-Z][a-z]+)\b/g,
+  // School with number pattern (e.g., "CBE Elementary No. 12")
+  schoolWithNumber: /\b(?:[A-Z]+\s+)?(?:Elementary|Junior|High|Secondary|School|Composite)\s+(?:School\s+)?No\.\s*\d+\b/g,
   // Names - common patterns that might indicate personal names
   fullName: /\b[A-Z][a-z]+\s+[A-Z][a-z]+\b/g,
-  // Student IDs, employee IDs - more specific patterns
-  employeeId: /\b(EMP|STF|STAFF)[-\s]?\d{5,10}\b/gi,
-  studentId: /\b(STU|STUDENT)[-\s]?\d{5,10}\b/gi,
   healthcareId: /\b\d{3,4}[-\s]\d{4}[-\s]\d{4}\b/g,
   ssn: /\b\d{3}[-\s]\d{2}[-\s]\d{4}\b/g,
+  // Canadian SIN with spaces
+  sinSpaces: /\b\d{3}\s+\d{3}\s+\d{3}\b/g,
   creditCard: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
+  // License numbers with various formats
+  licenseNumber: /\b(?:License|Lic|DL)(?:\s*#)?[:\s]+[A-Z]{0,2}-?\d{6,12}\b/gi,
   // Postal codes (Canadian) - with word boundaries
   postalCode: /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/gi,
   // Address patterns
@@ -66,10 +84,17 @@ const PII_PATTERNS = {
   poBox: /\bP\.?O\.?\s*Box\s+\d+\b/gi,
   ruralRoute: /\bR\.?R\.?\s*\d+(?:,?\s*Site\s+\d+)?(?:,?\s*Box\s+\d+)?\b/gi,
   unitSuite: /\b(?:Unit|Suite|Apt|Apartment|#)\s*\d+[-,]?\s*/gi,
-  // Alberta-specific locations (cities/towns) - dynamically constructed
-  get albertaLocation() {
-    return new RegExp(`\\b(?:${ALBERTA_CITIES.join('|').replace(/\./g, '\\.')})(?:,?\\s*(?:AB|Alberta))?\\b`, 'g');
-  }
+  // Specific dates that could identify individuals (e.g., "September 15, 2023")
+  specificDate: /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/g,
+  // Alberta-specific locations with ", Alberta" suffix - should always be redacted
+  albertaLocationWithSuffix: new RegExp(`\\b(?:${ALBERTA_CITIES.join('|').replace(/\./g, '\\.')})(?:,\\s*(?:AB|Alberta))\\b`, 'g'),
+  // Alberta-specific locations (cities/towns) - context-aware
+  // Only match when followed by identifying context (address, postal code, school name)
+  get albertaLocationStrict() {
+    return new RegExp(`\\b(?:${ALBERTA_CITIES.join('|').replace(/\./g, '\\.')})(?=\\s+(?:Elementary|High|School|[A-Z]\\d[A-Z]))\\b`, 'g');
+  },
+  // Neighborhoods (common Alberta neighborhoods)
+  neighborhood: /\b(Beltline|Kensington|Inglewood|Mission|Bridgeland|Downtown|Oliver|Whyte\s+Avenue|Garneau)\s+(?:neighborhood|area|district)\b/gi,
 };
 
 const BLOCKED_CONTENT = [
@@ -143,25 +168,38 @@ export function scrubPII(text: string): string {
   // Remove credit cards
   scrubbed = scrubbed.replace(PII_PATTERNS.creditCard, "[id redacted]");
   
-  // Remove SSN
+  // Remove SSN (traditional format)
   scrubbed = scrubbed.replace(PII_PATTERNS.ssn, "[id redacted]");
+  
+  // Remove Canadian SIN with spaces (before healthcare IDs to avoid conflicts)
+  scrubbed = scrubbed.replace(PII_PATTERNS.sinSpaces, "[id redacted]");
   
   // Remove healthcare IDs
   scrubbed = scrubbed.replace(PII_PATTERNS.healthcareId, "[id redacted]");
   
-  // Remove employee/student IDs
+  // Remove license numbers (before general ID patterns)
+  scrubbed = scrubbed.replace(PII_PATTERNS.licenseNumber, "[id redacted]");
+  
+  // Remove employee/student IDs (BEFORE phone numbers to avoid conflicts)
   scrubbed = scrubbed.replace(PII_PATTERNS.employeeId, "[id redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.studentId, "[id redacted]");
+  scrubbed = scrubbed.replace(PII_PATTERNS.studentIdAlt, "[id redacted]");
   
   // Remove phone numbers (in order of specificity to avoid conflicts)
   // First remove toll-free
   scrubbed = scrubbed.replace(PII_PATTERNS.phoneTollFree, "[phone redacted]");
+  // Then international dialing prefix format (011-XX-...)
+  scrubbed = scrubbed.replace(PII_PATTERNS.phoneIntlDialing, "[phone redacted]");
+  // Then UK phone numbers
+  scrubbed = scrubbed.replace(PII_PATTERNS.phoneUK, "[phone redacted]");
   // Then E.164 format
   scrubbed = scrubbed.replace(PII_PATTERNS.phoneE164, "[phone redacted]");
+  // Then international format
+  scrubbed = scrubbed.replace(PII_PATTERNS.phoneInternational, "[phone redacted]");
   // Then NANP format
   scrubbed = scrubbed.replace(PII_PATTERNS.phoneNANP, "[phone redacted]");
-  // Finally international (most permissive, so last)
-  scrubbed = scrubbed.replace(PII_PATTERNS.phoneInternational, "[phone redacted]");
+  // Finally local 7-digit format (after all others to avoid conflicts)
+  scrubbed = scrubbed.replace(PII_PATTERNS.phoneLocal, "[phone redacted]");
   
   // Remove URLs
   scrubbed = scrubbed.replace(PII_PATTERNS.url, "[link redacted]");
@@ -172,18 +210,30 @@ export function scrubPII(text: string): string {
   scrubbed = scrubbed.replace(PII_PATTERNS.ruralRoute, "[address redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.unitSuite, "[address redacted] ");
   
-  // Remove school names (various patterns)
+  // Remove school names (various patterns) - more specific patterns first
+  scrubbed = scrubbed.replace(PII_PATTERNS.schoolWithCityAndNumber, "[school name redacted]");
+  scrubbed = scrubbed.replace(PII_PATTERNS.schoolWithNumber, "[school name redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.school, "[school name redacted]");
   scrubbed = scrubbed.replace(PII_PATTERNS.albertaSchool, "[school name redacted]");
   
   // Remove postal codes
   scrubbed = scrubbed.replace(PII_PATTERNS.postalCode, "[postal code redacted]");
   
-  // Remove Alberta-specific locations (but keep general Alberta references)
-  scrubbed = scrubbed.replace(PII_PATTERNS.albertaLocation, "[location redacted]");
+  // Remove specific dates that could identify individuals
+  scrubbed = scrubbed.replace(PII_PATTERNS.specificDate, "[date redacted]");
+  
+  // Remove neighborhoods
+  scrubbed = scrubbed.replace(PII_PATTERNS.neighborhood, "[location redacted]");
+  
+  // Remove Alberta cities with ", Alberta" or ", AB" suffix (always redact)
+  scrubbed = scrubbed.replace(PII_PATTERNS.albertaLocationWithSuffix, "[location redacted]");
+  
+  // Context-aware Alberta location redaction
+  // Only redact cities in strict contexts (followed by school names, postal codes)
+  scrubbed = scrubbed.replace(PII_PATTERNS.albertaLocationStrict, "[location redacted]");
   
   // Remove context-based ID numbers (only if preceded by ID/number/#)
-  scrubbed = scrubbed.replace(/\b(id|number|#|license|lic|dl)\s*[:]?\s*\d{5,10}\b/gi, "[id redacted]");
+  scrubbed = scrubbed.replace(/\b(id|number|#)\s*[:]?\s*\d{5,10}\b/gi, "[id redacted]");
   
   return scrubbed;
 }
