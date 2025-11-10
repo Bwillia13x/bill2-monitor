@@ -83,9 +83,10 @@ const PII_PATTERNS = {
   // Canadian SIN without spaces (traditional)
   sin: /\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b/g,
   creditCard: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g,
-  // License numbers with various formats
-  licenseNumber: /\b(?:License|Lic|DL)(?:\s*#)?[:\s]+[A-Z]{0,2}-?\d{6,12}\b/gi,
-  // Driver license format: DL-123456789
+  // License numbers with various formats - handle "License number DL-123" and "License: DL-123"
+  // Capture the prefix to preserve it in the output
+  licenseNumber: /\b((?:License|Lic)(?:\s+number)?(?:\s*#)?[:\s]+)(?:DL[-\s]?)?[A-Z]{0,2}-?\d{6,12}\b/gi,
+  // Driver license format: DL-123456789 (standalone)
   driverLicense: /\bDL[-\s]?\d{6,12}\b/gi,
   // Postal codes (Canadian) - with word boundaries
   postalCode: /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/gi,
@@ -180,6 +181,12 @@ export function scrubPII(text: string): string {
   // Remove credit cards
   scrubbed = scrubbed.replace(PII_PATTERNS.creditCard, "[id redacted]");
   
+  // Remove license numbers BEFORE SIN/SSN to avoid conflicts - preserve prefix like "License number "
+  scrubbed = scrubbed.replace(PII_PATTERNS.licenseNumber, "$1[id redacted]");
+  
+  // Remove driver license format (DL-123456789) - standalone format
+  scrubbed = scrubbed.replace(PII_PATTERNS.driverLicense, "[id redacted]");
+  
   // Remove SSN (traditional format)
   scrubbed = scrubbed.replace(PII_PATTERNS.ssn, "[id redacted]");
   
@@ -188,12 +195,6 @@ export function scrubPII(text: string): string {
   
   // Remove healthcare IDs
   scrubbed = scrubbed.replace(PII_PATTERNS.healthcareId, "[id redacted]");
-  
-  // Remove driver license format (DL-123456789) - before generic license pattern
-  scrubbed = scrubbed.replace(PII_PATTERNS.driverLicense, "[id redacted]");
-  
-  // Remove license numbers (before general ID patterns)
-  scrubbed = scrubbed.replace(PII_PATTERNS.licenseNumber, "[id redacted]");
   
   // Remove employee/student IDs (BEFORE phone numbers to avoid conflicts)
   scrubbed = scrubbed.replace(PII_PATTERNS.employeeId, "[id redacted]");
