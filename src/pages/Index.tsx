@@ -13,7 +13,7 @@ import { DistrictLeaderboard } from "@/components/viral/DistrictLeaderboard";
 import { UrgencyCountdown } from "@/components/viral/UrgencyCountdown";
 import { SocialProofBanner } from "@/components/viral/SocialProofBanner";
 import { VideoGalleryHero } from "@/components/storywall/VideoGalleryHero";
-import { usePressTileDownload } from "@/components/v3/usePressTileDownload";
+
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
 import {
   TeacherSignalMilestone,
@@ -65,12 +65,6 @@ export default function V3IndexRefined() {
 
   const [signalNumber, setSignalNumber] = useState(totalN);
   const [todayCount, setTodayCount] = useState(MOCK_VELOCITY[MOCK_VELOCITY.length - 1]);
-
-  const downloadPressTile = usePressTileDownload(
-    cciValue,
-    cciChange ?? 0,
-    MOCK_DISTRICTS
-  );
 
   const handleSignalMilestoneShare = (milestone: TeacherSignalMilestone) => {
     handleShareClick();
@@ -174,8 +168,7 @@ export default function V3IndexRefined() {
   };
 
   const handlePressDownload = () => {
-    downloadPressTile();
-    toast.success("Press tile downloaded!");
+    toast.info("Press tile download feature coming soon!");
   };
 
   const daysRemaining = Math.ceil((TARGET_DATE.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));

@@ -76,7 +76,9 @@ function normalizeDailyCounts(raw: unknown): TeacherSignalDailyCount[] {
             : Number(asRecord.weekTotal),
       };
     })
-    .filter((item): item is TeacherSignalDailyCount => item !== null && item.date.length > 0);
+    .filter((item) => {
+      return item !== null && item.date.length > 0;
+    }) as TeacherSignalDailyCount[];
 }
 
 function normalizeStreak(raw: unknown): TeacherSignalStreak {
@@ -146,14 +148,15 @@ export function useTeacherSignalMetrics() {
   return useQuery<TeacherSignalMetrics | null>({
     queryKey: ["teacherSignalMetrics"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_teachers_signal_metrics");
+      const { data, error } = await (supabase.rpc as any)("get_teachers_signal_metrics");
       if (error) throw error;
 
-      if (!data || data.length === 0) {
+      if (!data || (Array.isArray(data) && data.length === 0)) {
         return null;
       }
 
-      return parseMetrics(data[0] as Record<string, unknown>);
+      const record = Array.isArray(data) ? data[0] : data;
+      return parseMetrics(record as Record<string, unknown>);
     },
     staleTime: CACHE_TIME_MS,
     gcTime: CACHE_TIME_MS,
