@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SocialMetaTags } from "@/components/v3/SocialMetaTags";
+import { ImpactHero } from "@/components/v3/ImpactHero";
 import { V3HeroSimple } from "@/components/v3/V3HeroSimple";
 import { CCIBulletGraphs } from "@/components/v3/CCIBulletGraphs";
 import { SubmitModal } from "@/components/v3/SubmitModal";
@@ -188,11 +189,29 @@ export default function V3IndexRefined() {
           background: 'linear-gradient(to bottom, #0a0a0a 0%, #111827 50%, #0a0a0a 100%)',
         }}
       >
-        {/* NEW HERO: Video Gallery */}
-        <VideoGalleryHero onUploadClick={() => setVideoUploadModalOpen(true)} />
+        {/* HERO: Core Message */}
+        <ImpactHero 
+          onSubmitClick={() => setSubmitModalOpen(true)}
+          totalSignals={totalN}
+        />
 
-        <section className="relative py-12 border-t border-primary/20">
+        {/* SECTION: Video Stories */}
+        <section className="relative py-16 border-t border-primary/20">
+          <VideoGalleryHero onUploadClick={() => setVideoUploadModalOpen(true)} />
+        </section>
+
+        {/* SECTION: Teachers' Signal Metrics */}
+        <section className="relative py-16 border-t border-primary/20">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Teachers' Signal Network
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Real-time visualization of educator participation across Alberta
+              </p>
+            </div>
+
             <TeachersSignalThermometer
               metrics={signalMetrics}
               loading={signalLoading}
@@ -210,16 +229,16 @@ export default function V3IndexRefined() {
           </div>
         </section>
 
-        {/* SECTION 2: Climate Conditions Index */}
+        {/* SECTION: Climate Conditions Index */}
         <section className="relative py-16 border-t border-primary/20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             {/* Section Header */}
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                Climate Conditions Index
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Classroom Conditions Index
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Real-time aggregate measure of educator wellbeing and classroom climate
+                Real-time aggregate measure of educator wellbeing and working conditions
               </p>
             </div>
 
