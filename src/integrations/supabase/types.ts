@@ -86,6 +86,36 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          error_timestamp: string
+          error_type: string
+          id: string
+          message: string
+          stack_trace: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          error_timestamp?: string
+          error_type: string
+          id?: string
+          message: string
+          stack_trace?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          error_timestamp?: string
+          error_type?: string
+          id?: string
+          message?: string
+          stack_trace?: string | null
+        }
+        Relationships: []
+      }
       micro_poll_responses: {
         Row: {
           created_at: string
@@ -261,6 +291,39 @@ export type Database = {
         }
         Relationships: []
       }
+      snapshot_logs: {
+        Row: {
+          created_at: string
+          data_hash: string
+          id: string
+          metadata: Json | null
+          snapshot_id: string
+          snapshot_timestamp: string
+          status: string
+          total_records: number
+        }
+        Insert: {
+          created_at?: string
+          data_hash: string
+          id?: string
+          metadata?: Json | null
+          snapshot_id: string
+          snapshot_timestamp?: string
+          status: string
+          total_records: number
+        }
+        Update: {
+          created_at?: string
+          data_hash?: string
+          id?: string
+          metadata?: Json | null
+          snapshot_id?: string
+          snapshot_timestamp?: string
+          status?: string
+          total_records?: number
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           approved: boolean | null
@@ -427,6 +490,16 @@ export type Database = {
           cci: number
           day: string
           n: number
+        }[]
+      }
+      get_latest_snapshot_info: {
+        Args: never
+        Returns: {
+          data_hash: string
+          snapshot_id: string
+          snapshot_timestamp: string
+          status: string
+          total_records: number
         }[]
       }
       get_poll_aggregate: {

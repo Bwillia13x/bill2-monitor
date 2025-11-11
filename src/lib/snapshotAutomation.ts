@@ -88,13 +88,17 @@ export class SnapshotAutomationService {
       const { error: logError } = await supabase
         .from('snapshot_logs')
         .insert({
-          timestamp,
-          version: '1.0',
-          total_hash: totalChecksum,
-          file_count: 2,
+          snapshot_id: snapshotId,
+          snapshot_timestamp: timestamp,
           total_records: (cciData || []).length,
-          geographic_coverage: this.getDistrictCount(cciData || []),
-          manifest: metadata
+          data_hash: totalChecksum,
+          status: 'success',
+          metadata: {
+            version: '1.0',
+            file_count: 2,
+            geographic_coverage: this.getDistrictCount(cciData || []),
+            manifest: metadata
+          }
         });
       
       if (logError) {
@@ -140,9 +144,9 @@ export class SnapshotAutomationService {
         .from('error_logs')
         .insert({
           error_type: 'snapshot_generation',
-          error_message: error instanceof Error ? error.message : 'Unknown error',
-          error_stack: error instanceof Error ? error.stack : undefined,
-          timestamp: new Date().toISOString()
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack_trace: error instanceof Error ? error.stack : undefined,
+          error_timestamp: new Date().toISOString()
         });
       
       throw error;
@@ -189,7 +193,7 @@ export class SnapshotAutomationService {
     const { data, error } = await supabase
       .from('snapshot_logs')
       .select('*')
-      .order('timestamp', { ascending: false })
+      .order('snapshot_timestamp', { ascending: false })
       .limit(limit);
     
     if (error) {
