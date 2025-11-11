@@ -21,6 +21,7 @@ export default defineConfig(({ mode }) => ({
     exclude: ["@rollup/wasm-node"],
   },
   build: {
+    manifest: true, // Generate manifest.json for bundle analysis
     rollupOptions: {
       output: {
         manualChunks: {

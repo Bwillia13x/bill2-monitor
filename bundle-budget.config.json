@@ -1,0 +1,11 @@
+{
+  "perChunkKB": 300,
+  "initialTotalKB": 1200,
+  "vendorExemptions": [
+    "recharts-vendor",
+    "carousel-vendor",
+    "radix-vendor",
+    "react-vendor",
+    "data-vendor"
+  ]
+}

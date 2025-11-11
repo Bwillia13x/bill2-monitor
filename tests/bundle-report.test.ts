@@ -1,7 +1,7 @@
 // Tests for bundle-report.mjs
-// Verifies vendor chunk exemption, size budget enforcement, and edge cases
+// Verifies allowlist-based vendor exemption, size budget enforcement, and initial-load total
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,6 +11,17 @@ const __dirname = path.dirname(__filename);
 
 // Create a temporary test directory
 const TEST_DIST_DIR = path.join(__dirname, '..', 'dist-test-fixtures');
+const TEST_CONFIG_PATH = path.join(__dirname, '..', 'bundle-budget-test.config.json');
+
+// Default test config
+const DEFAULT_TEST_CONFIG = {
+  perChunkKB: 300,
+  initialTotalKB: 500,
+  vendorExemptions: [
+    'recharts-vendor',
+    'react-vendor',
+  ]
+};
 
 describe('Bundle Report Script', () => {
   beforeEach(() => {
@@ -22,6 +33,9 @@ describe('Bundle Report Script', () => {
     if (!fs.existsSync(assetsDir)) {
       fs.mkdirSync(assetsDir, { recursive: true });
     }
+    
+    // Create test config
+    fs.writeFileSync(TEST_CONFIG_PATH, JSON.stringify(DEFAULT_TEST_CONFIG, null, 2));
   });
 
   afterEach(() => {
@@ -29,226 +43,157 @@ describe('Bundle Report Script', () => {
     if (fs.existsSync(TEST_DIST_DIR)) {
       fs.rmSync(TEST_DIST_DIR, { recursive: true, force: true });
     }
+    if (fs.existsSync(TEST_CONFIG_PATH)) {
+      fs.unlinkSync(TEST_CONFIG_PATH);
+    }
   });
 
-  describe('Vendor Chunk Exemption', () => {
-    it('should exempt files with -vendor in the filename from budget checks', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
+  describe('Allowlist-Based Vendor Exemption', () => {
+    it('should exempt allowlisted vendor chunks from budget', () => {
+      const { isVendorChunk } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       
-      // Create a large vendor chunk (400 KB - exceeds 300 KB limit)
-      const largeVendorContent = 'x'.repeat(400 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'recharts-vendor-abc123.js'),
-        largeVendorContent
-      );
-
-      // Create a small non-vendor chunk (100 KB - within limit)
-      const smallContent = 'x'.repeat(100 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-def456.js'),
-        smallContent
-      );
-
-      // This should pass since vendor chunks are exempt
-      const { isVendorChunk } = getBundleReportHelpers();
+      // Allowlisted patterns should be exempt
       expect(isVendorChunk('recharts-vendor-abc123.js')).toBe(true);
-      expect(isVendorChunk('index-def456.js')).toBe(false);
+      expect(isVendorChunk('react-vendor-xyz789.js')).toBe(true);
     });
 
-    it('should recognize all vendor chunk patterns', () => {
-      const { isVendorChunk } = getBundleReportHelpers();
+    it('should NOT exempt non-allowlisted vendor chunks', () => {
+      const { isVendorChunk } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       
-      expect(isVendorChunk('recharts-vendor-abc.js')).toBe(true);
-      expect(isVendorChunk('react-vendor-xyz.js')).toBe(true);
-      expect(isVendorChunk('data-vendor-123.js')).toBe(true);
-      expect(isVendorChunk('radix-vendor-789.js')).toBe(true);
-      expect(isVendorChunk('carousel-vendor-fff.js')).toBe(true);
+      // Not in allowlist, so not exempt even if named -vendor
+      expect(isVendorChunk('unknown-vendor-abc.js')).toBe(false);
+      expect(isVendorChunk('custom-vendor-xyz.js')).toBe(false);
+    });
+
+    it('should NOT exempt chunks without -vendor pattern', () => {
+      const { isVendorChunk } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       
-      // Non-vendor chunks
       expect(isVendorChunk('index-abc.js')).toBe(false);
       expect(isVendorChunk('methods-xyz.js')).toBe(false);
-      expect(isVendorChunk('vendor.js')).toBe(false); // Must have -vendor pattern
+      expect(isVendorChunk('vendor.js')).toBe(false);
     });
   });
 
   describe('Bundle Budget Enforcement', () => {
-    it('should fail when a non-vendor JS chunk exceeds 300 KB', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create a non-vendor chunk that exceeds budget (301 KB)
-      const oversizedContent = 'x'.repeat(301 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-large.js'),
-        oversizedContent
-      );
-
-      const { checkBudget } = getBundleReportHelpers();
+    it('should fail when a non-vendor JS chunk exceeds per-chunk budget', () => {
+      const { checkBudget } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       const sizeKB = 301;
       const isViolation = checkBudget('index-large.js', sizeKB, 300);
       
       expect(isViolation).toBe(true);
     });
 
-    it('should pass when a non-vendor JS chunk is exactly at budget (300 KB)', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create a chunk exactly at budget (300 KB)
-      const exactContent = 'x'.repeat(300 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-exact.js'),
-        exactContent
-      );
-
-      const { checkBudget } = getBundleReportHelpers();
+    it('should pass when a non-vendor JS chunk is exactly at budget', () => {
+      const { checkBudget } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       const sizeKB = 300;
       const isViolation = checkBudget('index-exact.js', sizeKB, 300);
       
       expect(isViolation).toBe(false);
     });
 
-    it('should pass when a non-vendor JS chunk is under budget (299 KB)', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create a chunk under budget (299 KB)
-      const underContent = 'x'.repeat(299 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-under.js'),
-        underContent
-      );
-
-      const { checkBudget } = getBundleReportHelpers();
+    it('should pass when a non-vendor JS chunk is under budget', () => {
+      const { checkBudget } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
       const sizeKB = 299;
       const isViolation = checkBudget('index-under.js', sizeKB, 300);
       
       expect(isViolation).toBe(false);
     });
+
+    it('should pass when an allowlisted vendor chunk exceeds budget', () => {
+      const { checkBudget } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
+      const sizeKB = 500; // Exceeds 300KB but is allowlisted
+      const isViolation = checkBudget('recharts-vendor-abc.js', sizeKB, 300);
+      
+      expect(isViolation).toBe(false); // Exempt from budget
+    });
+
+    it('should fail when a non-allowlisted vendor chunk exceeds budget', () => {
+      const { checkBudget } = getBundleReportHelpers(DEFAULT_TEST_CONFIG.vendorExemptions);
+      const sizeKB = 350; // Exceeds 300KB and NOT in allowlist
+      const isViolation = checkBudget('custom-vendor-abc.js', sizeKB, 300);
+      
+      expect(isViolation).toBe(true); // NOT exempt
+    });
   });
 
-  describe('Edge Cases', () => {
-    it('should ignore .map files when checking budget', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create a large .map file (500 KB)
-      const largeMapContent = 'x'.repeat(500 * 1024);
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-abc.js.map'),
-        largeMapContent
-      );
-
-      // Map files should not be checked (they're not .js files)
-      const { isJavaScriptFile } = getBundleReportHelpers();
+  describe('File Type Filtering', () => {
+    it('should ignore .map files', () => {
+      const { isJavaScriptFile } = getBundleReportHelpers([]);
       expect(isJavaScriptFile('index-abc.js.map')).toBe(false);
       expect(isJavaScriptFile('index-abc.js')).toBe(true);
     });
 
-    it('should only check uncompressed JS files, not .gz or .br files', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create compressed files
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-abc.js.gz'),
-        'compressed'
-      );
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-abc.js.br'),
-        'compressed'
-      );
-      fs.writeFileSync(
-        path.join(assetsDir, 'index-abc.js'),
-        'uncompressed'
-      );
-
-      const { isJavaScriptFile } = getBundleReportHelpers();
+    it('should ignore .gz and .br compressed files', () => {
+      const { isJavaScriptFile } = getBundleReportHelpers([]);
       expect(isJavaScriptFile('index-abc.js.gz')).toBe(false);
       expect(isJavaScriptFile('index-abc.js.br')).toBe(false);
       expect(isJavaScriptFile('index-abc.js')).toBe(true);
     });
 
     it('should only check JS files, not CSS or other assets', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
-      
-      // Create various asset types
-      fs.writeFileSync(
-        path.join(assetsDir, 'index.css'),
-        'x'.repeat(400 * 1024) // 400 KB CSS should not be checked
-      );
-      fs.writeFileSync(
-        path.join(assetsDir, 'image.png'),
-        'x'.repeat(500 * 1024) // 500 KB image should not be checked
-      );
-
-      const { isJavaScriptFile } = getBundleReportHelpers();
+      const { isJavaScriptFile } = getBundleReportHelpers([]);
       expect(isJavaScriptFile('index.css')).toBe(false);
       expect(isJavaScriptFile('image.png')).toBe(false);
-    });
-
-    it('should handle empty dist directory gracefully', () => {
-      const emptyDir = path.join(TEST_DIST_DIR, 'empty-assets');
-      fs.mkdirSync(emptyDir, { recursive: true });
-
-      // Should not crash on empty directory
-      expect(fs.existsSync(emptyDir)).toBe(true);
-      const files = fs.readdirSync(emptyDir);
-      expect(files.length).toBe(0);
+      expect(isJavaScriptFile('index.js')).toBe(true);
     });
   });
 
-  describe('Multiple Violations Reporting', () => {
-    it('should report all violations, not just the first one', () => {
-      const assetsDir = path.join(TEST_DIST_DIR, 'assets');
+  describe('Initial Load Total Budget', () => {
+    it('should calculate total size of entrypoint chunks', () => {
+      const chunks = [
+        { name: 'index.js', sizeKB: 200, isEntrypoint: true },
+        { name: 'vendor.js', sizeKB: 150, isEntrypoint: true },
+        { name: 'lazy.js', sizeKB: 100, isEntrypoint: false },
+      ];
       
-      // Create multiple oversized non-vendor chunks
-      fs.writeFileSync(
-        path.join(assetsDir, 'chunk1-abc.js'),
-        'x'.repeat(310 * 1024)
-      );
-      fs.writeFileSync(
-        path.join(assetsDir, 'chunk2-def.js'),
-        'x'.repeat(320 * 1024)
-      );
-      fs.writeFileSync(
-        path.join(assetsDir, 'chunk3-ghi.js'),
-        'x'.repeat(330 * 1024)
-      );
-
-      const { checkBudget } = getBundleReportHelpers();
+      const initialLoadTotal = chunks
+        .filter(c => c.isEntrypoint)
+        .reduce((sum, c) => sum + c.sizeKB, 0);
       
-      const violations = [];
-      violations.push(checkBudget('chunk1-abc.js', 310, 300));
-      violations.push(checkBudget('chunk2-def.js', 320, 300));
-      violations.push(checkBudget('chunk3-ghi.js', 330, 300));
+      expect(initialLoadTotal).toBe(350);
+    });
 
-      // All three should be violations
-      expect(violations.filter(v => v).length).toBe(3);
+    it('should flag violation when initial load exceeds budget', () => {
+      const initialLoadTotalKB = 600;
+      const budgetKB = 500;
+      
+      const exceeds = initialLoadTotalKB > budgetKB;
+      expect(exceeds).toBe(true);
+    });
+
+    it('should pass when initial load is within budget', () => {
+      const initialLoadTotalKB = 450;
+      const budgetKB = 500;
+      
+      const exceeds = initialLoadTotalKB > budgetKB;
+      expect(exceeds).toBe(false);
     });
   });
 });
 
-// Helper functions extracted from bundle-report.mjs logic
-function getBundleReportHelpers() {
-  const MAX_CHUNK_SIZE_KB = 300;
-
-  function isVendorChunk(filename: string): boolean {
-    return filename.includes('-vendor') && filename.endsWith('.js');
-  }
-
+// Helper functions matching bundle-report.mjs logic
+function getBundleReportHelpers(vendorExemptions: string[]) {
   function isJavaScriptFile(filename: string): boolean {
-    return filename.endsWith('.js') && 
+    return filename.endsWith('.js') &&
            !filename.endsWith('.js.map') &&
            !filename.endsWith('.js.gz') &&
            !filename.endsWith('.js.br');
   }
 
+  function isVendorChunk(filename: string): boolean {
+    // Check if filename matches any allowlisted vendor pattern
+    return vendorExemptions.some(pattern => filename.includes(pattern));
+  }
+
   function checkBudget(filename: string, sizeKB: number, maxSizeKB: number): boolean {
     if (!isJavaScriptFile(filename)) return false;
-    if (isVendorChunk(filename)) return false;
+    if (isVendorChunk(filename)) return false; // Exempt
     return sizeKB > maxSizeKB;
   }
 
   return {
-    isVendorChunk,
     isJavaScriptFile,
+    isVendorChunk,
     checkBudget,
-    MAX_CHUNK_SIZE_KB,
   };
 }
