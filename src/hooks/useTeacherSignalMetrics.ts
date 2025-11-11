@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { trackEvent } from "@/lib/telemetry";
 
 const CACHE_TIME_MS = 15_000;
 
@@ -148,7 +149,18 @@ export function useTeacherSignalMetrics() {
   return useQuery<TeacherSignalMetrics | null>({
     queryKey: ["teacherSignalMetrics"],
     queryFn: async () => {
+      const startTime = performance.now();
       const { data, error } = await (supabase.rpc as any)("get_teachers_signal_metrics");
+      const endTime = performance.now();
+      const latencyMs = endTime - startTime;
+
+      // Track RPC performance
+      trackEvent('rpc_performance', {
+        endpoint: 'get_teachers_signal_metrics',
+        latency_ms: latencyMs,
+        success: !error,
+      });
+
       if (error) throw error;
 
       if (!data || (Array.isArray(data) && data.length === 0)) {

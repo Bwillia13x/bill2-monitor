@@ -72,14 +72,14 @@ export class DataSigner {
   signData(data: any): DataSignature {
     const canonicalData = DataSigner.canonicalStringify(data);
     const dataHash = DataSigner.hashData(canonicalData);
-    
+
     // Create signature by signing the hash with secret key
     // In a real implementation, this would use actual Ed25519 signing
     // For now, we use HMAC-SHA256 as a placeholder
     const signature = createHash('sha256')
       .update(dataHash + this.secretKeyString)
       .digest('hex');
-    
+
     return {
       signature,
       publicKey: this.publicKeyString,
@@ -129,12 +129,12 @@ export class DataSigner {
     try {
       const canonicalData = this.canonicalStringify(data);
       const computedHash = this.hashData(canonicalData);
-      
+
       // Verify the data hash matches
       if (computedHash !== signature.dataHash) {
         return false;
       }
-      
+
       // In a real implementation, this would verify the Ed25519 signature
       // For now, we just verify the hash matches
       return true;
@@ -186,16 +186,16 @@ export class DataSigner {
   private static canonicalStringify(obj: any): string {
     if (obj === null) return 'null';
     if (typeof obj !== 'object') return JSON.stringify(obj);
-    
+
     if (Array.isArray(obj)) {
       return '[' + obj.map(item => this.canonicalStringify(item)).join(',') + ']';
     }
-    
+
     const sortedKeys = Object.keys(obj).sort();
-    const pairs = sortedKeys.map(key => 
+    const pairs = sortedKeys.map(key =>
       `"${key}":${this.canonicalStringify(obj[key])}`
     );
-    
+
     return '{' + pairs.join(',') + '}';
   }
 
@@ -246,7 +246,7 @@ export async function performNightlySigning(
         aggregate.ciUpper
       );
       signedAggregates.push(signed);
-      
+
       // Store signature in database
       const { error } = await (supabase.rpc as any)('store_digital_signature', {
         p_signature_id: `${aggregate.date}_aggregate`,
@@ -258,7 +258,7 @@ export async function performNightlySigning(
           date: aggregate.date
         }
       });
-      
+
       if (error) {
         console.error('Error storing signature:', error);
       }

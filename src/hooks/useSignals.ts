@@ -71,10 +71,10 @@ export function useTodayAggregate() {
       const { data, error } = await supabase.rpc("get_today_aggregate");
 
       if (error) throw error;
-      
+
       // Return null if no data (n<20) or empty result
       if (!data || data.length === 0) return null;
-      
+
       return {
         avgDissatisfaction: Number(data[0].avg_dissatisfaction),
         totalSignals: data[0].total_signals,
@@ -91,7 +91,7 @@ export function useAggregateHistory() {
       const { data, error } = await supabase.rpc("get_aggregate_dissatisfaction");
 
       if (error) throw error;
-      
+
       return data.map((row) => ({
         date: row.signal_date,
         avgDissatisfaction: Number(row.avg_dissatisfaction),

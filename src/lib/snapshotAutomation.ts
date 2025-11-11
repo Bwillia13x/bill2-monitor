@@ -50,23 +50,23 @@ export class SnapshotAutomationService {
   async generateWeeklySnapshot(): Promise<SnapshotManifest> {
     const timestamp = new Date().toISOString();
     const snapshotId = `snapshot-${Date.now()}`;
-    
+
     try {
       // Fetch all aggregate data from database
       const { data: cciData, error: cciError } = await supabase
         .from('cci_submissions')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (cciError) {
         console.error('Error fetching CCI data:', cciError);
       }
-      
+
       // Generate CSV content
       const csvContent = this.generateCSV(cciData || []);
       const csvBlob = new Blob([csvContent], { type: 'text/csv' });
       const csvChecksum = await this.calculateChecksum(csvContent);
-      
+
       // Generate JSON metadata
       const metadata = {
         snapshotId,
@@ -77,13 +77,13 @@ export class SnapshotAutomationService {
           csv: csvChecksum
         }
       };
-      
+
       const metadataContent = JSON.stringify(metadata, null, 2);
       const metadataChecksum = await this.calculateChecksum(metadataContent);
-      
+
       // Calculate total checksum
       const totalChecksum = await this.calculateChecksum(csvChecksum + metadataChecksum);
-      
+
       // Log to database
       const { error: logError } = await supabase
         .from('snapshot_logs')
@@ -100,14 +100,14 @@ export class SnapshotAutomationService {
             manifest: metadata
           }
         });
-      
+
       if (logError) {
         console.error('Error logging snapshot:', logError);
       }
-      
+
       // Log to Merkle chain
       await logSnapshotCreation(snapshotId, (cciData || []).length, totalChecksum);
-      
+
       const files: SnapshotFile[] = [
         {
           filename: 'aggregates.csv',
@@ -124,7 +124,7 @@ export class SnapshotAutomationService {
           createdAt: timestamp
         }
       ];
-      
+
       return {
         snapshotId,
         timestamp,
@@ -138,7 +138,7 @@ export class SnapshotAutomationService {
       };
     } catch (error) {
       console.error('Snapshot generation failed:', error);
-      
+
       // Log error to database
       await supabase
         .from('error_logs')
@@ -148,7 +148,7 @@ export class SnapshotAutomationService {
           stack_trace: error instanceof Error ? error.stack : undefined,
           error_timestamp: new Date().toISOString()
         });
-      
+
       throw error;
     }
   }
@@ -160,14 +160,14 @@ export class SnapshotAutomationService {
     if (data.length === 0) {
       return 'district,tenure,subject,job_satisfaction,work_exhaustion,cci,created_at\n';
     }
-    
+
     const headers = Object.keys(data[0]).join(',');
-    const rows = data.map(row => 
-      Object.values(row).map(val => 
+    const rows = data.map(row =>
+      Object.values(row).map(val =>
         typeof val === 'string' && val.includes(',') ? `"${val}"` : val
       ).join(',')
     );
-    
+
     return headers + '\n' + rows.join('\n');
   }
 
@@ -195,12 +195,12 @@ export class SnapshotAutomationService {
       .select('*')
       .order('snapshot_timestamp', { ascending: false })
       .limit(limit);
-    
+
     if (error) {
       console.error('Error listing snapshots:', error);
       return [];
     }
-    
+
     return data || [];
   }
 
@@ -209,11 +209,11 @@ export class SnapshotAutomationService {
    */
   async getLatestSnapshot(): Promise<any> {
     const { data, error } = await supabase.rpc('get_latest_snapshot_info');
-    
+
     if (error || !data || data.length === 0) {
       return null;
     }
-    
+
     return data[0];
   }
 
@@ -233,7 +233,7 @@ export const snapshotAutomationService = new SnapshotAutomationService();
  */
 export async function runWeeklySnapshotTask(): Promise<void> {
   console.log('Running weekly snapshot task...');
-  
+
   try {
     const manifest = await snapshotAutomationService.generateWeeklySnapshot();
     console.log('Snapshot generated successfully:', manifest.snapshotId);

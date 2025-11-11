@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { TeacherSignalMetrics, TeacherSignalMilestone } from "@/hooks/useTeacherSignalMetrics";
+import { trackEvent } from "@/lib/telemetry";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 
 interface TeachersSignalThermometerProps {
   metrics: TeacherSignalMetrics | null;
@@ -66,10 +68,42 @@ export function TeachersSignalThermometer({
   const displayMetrics = metrics ?? FALLBACK_METRICS;
   const progressWidth = Math.min(displayMetrics.progress_pct, 100);
 
+  // A/B test: CTA copy variant
+  const ctaCopyVariant = useFeatureFlag('cta_copy_variant');
+
+  // A/B test: Confetti intensity
+  const confettiIntensity = useFeatureFlag('confetti_intensity');
+
   const percentageLabel = useMemo(
     () => `${displayMetrics.progress_pct.toFixed(1)}%`,
     [displayMetrics]
   );
+
+  // CTA copy variants for A/B testing
+  const submitButtonCopy = useMemo(() => {
+    switch (ctaCopyVariant) {
+      case 'urgent':
+        return 'Add Your Voice Now';
+      case 'community':
+        return 'Join Fellow Teachers';
+      case 'original':
+      default:
+        return 'Add Anonymous Signal';
+    }
+  }, [ctaCopyVariant]);
+
+  const shareButtonCopy = useMemo(() => {
+    switch (ctaCopyVariant) {
+      case 'urgent':
+        return 'Spread The Urgency';
+      case 'community':
+        return 'Share With Community';
+      case 'original':
+      default:
+        return "Share the Teachers' Signal";
+    }
+  }, [ctaCopyVariant]);
+
 
   useEffect(() => {
     if (!metrics) return;
@@ -78,6 +112,14 @@ export function TeachersSignalThermometer({
         milestoneTracker.current.add(milestone.percentage);
         createConfetti();
         onMilestoneShare?.(milestone);
+
+        // Track milestone reached event
+        trackEvent('thermometer_milestone_reached', {
+          milestone_percentage: milestone.percentage,
+          total_stories: metrics.total_stories,
+          division_coverage_pct: metrics.division_coverage_pct,
+          label: milestone.label,
+        });
       }
     });
   }, [metrics, onMilestoneShare]);
@@ -150,11 +192,10 @@ export function TeachersSignalThermometer({
           {displayMetrics.milestones.map((milestone) => (
             <div
               key={milestone.percentage}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold flex items-center gap-2 transition-all duration-200 ${
-                milestone.hit
+              className={`rounded-full border px-3 py-1 text-xs font-semibold flex items-center gap-2 transition-all duration-200 ${milestone.hit
                   ? "border-emerald-500/80 bg-emerald-500/20 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.4)]"
                   : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/60"
-              }`}
+                }`}
             >
               <span>{milestone.label}</span>
               <span className="text-[0.65rem]">{milestone.percentage}%</span>
@@ -163,16 +204,36 @@ export function TeachersSignalThermometer({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button onClick={onSubmitClick} size="lg" className="flex-1 min-w-[180px]">
-            Add Anonymous Signal
+          <Button
+            onClick={() => {
+              trackEvent('thermometer_cta_click', {
+                action: 'submit',
+                total_stories: displayMetrics.total_stories,
+                progress_pct: displayMetrics.progress_pct,
+                ab_test_variant: ctaCopyVariant,
+              });
+              onSubmitClick();
+            }}
+            size="lg"
+            className="flex-1 min-w-[180px]"
+          >
+            {submitButtonCopy}
           </Button>
           <Button
-            onClick={onShareClick}
+            onClick={() => {
+              trackEvent('thermometer_cta_click', {
+                action: 'share',
+                total_stories: displayMetrics.total_stories,
+                progress_pct: displayMetrics.progress_pct,
+                ab_test_variant: ctaCopyVariant,
+              });
+              onShareClick();
+            }}
             size="lg"
             variant="outline"
             className="flex-1 min-w-[180px] border-white/20 text-white"
           >
-            Share the Teachers&apos; Signal
+            {shareButtonCopy}
           </Button>
         </div>
       </div>

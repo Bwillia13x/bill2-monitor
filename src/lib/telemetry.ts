@@ -2,8 +2,10 @@
 // Buffers Web Vitals and error reports, flushes on pagehide/visibilitychange
 // Implements privacy scrubbing, retries with jitter, and circuit breaking
 // Respects privacy flags: TELEMETRY_ENABLED, TELEMETRY_SAMPLE_RATE, TELEMETRY_RESPECT_DNT
+// Phase 2: Added database persistence for analytics
 
 import type { WebVitalReport } from './webVitals';
+import { supabase } from '@/integrations/supabase/client';
 
 // Privacy Configuration
 const TELEMETRY_ENABLED = import.meta.env.TELEMETRY_ENABLED !== 'false'; // Default: true
@@ -46,6 +48,16 @@ export interface ErrorReport {
   context?: Record<string, unknown>;
 }
 
+export interface CustomEvent {
+  session_id: string;
+  ts: number;
+  event_name: string;
+  properties: Record<string, unknown>;
+  url: string;
+  device: string;
+  app_version: string;
+}
+
 // Circuit breaker state
 class CircuitBreaker {
   private failureCount = 0;
@@ -55,7 +67,7 @@ class CircuitBreaker {
   recordFailure(): void {
     this.failureCount++;
     this.lastFailureTime = Date.now();
-    
+
     if (this.failureCount >= CIRCUIT_BREAK_THRESHOLD) {
       this.isOpen = true;
       console.warn('[Telemetry] Circuit breaker opened due to repeated failures');
@@ -69,7 +81,7 @@ class CircuitBreaker {
 
   shouldAllow(): boolean {
     if (!this.isOpen) return true;
-    
+
     // Check if we should reset the circuit breaker
     const timeSinceLastFailure = Date.now() - this.lastFailureTime;
     if (timeSinceLastFailure > CIRCUIT_BREAK_RESET_MS) {
@@ -78,7 +90,7 @@ class CircuitBreaker {
       this.failureCount = 0;
       return true;
     }
-    
+
     return false;
   }
 }
@@ -90,13 +102,13 @@ function scrubUrl(url: string): string {
     // Remove query params and hash
     urlObj.search = '';
     urlObj.hash = '';
-    
+
     // Truncate path to max 3 segments
     const pathSegments = urlObj.pathname.split('/').filter(Boolean);
     if (pathSegments.length > 3) {
       urlObj.pathname = '/' + pathSegments.slice(0, 3).join('/') + '/...';
     }
-    
+
     return urlObj.toString();
   } catch (e) {
     // If URL parsing fails, return a generic placeholder
@@ -140,7 +152,7 @@ function shouldCollectTelemetry(): boolean {
     // 0% sample rate means no collection
     return false;
   }
-  
+
   if (TELEMETRY_SAMPLE_RATE < 1.0) {
     // Use a consistent hash-based value per session for sampling
     // This ensures user either is always sampled or never sampled during their session
@@ -149,7 +161,7 @@ function shouldCollectTelemetry(): boolean {
     // Convert base-36 hash to a number between 0 and 1
     const hashNum = parseInt(hashValue, 36);
     const normalized = (hashNum % 1000000) / 1000000; // Normalize to 0-1 range
-    
+
     if (normalized > TELEMETRY_SAMPLE_RATE) {
       return false;
     }
@@ -161,7 +173,7 @@ function shouldCollectTelemetry(): boolean {
 // Get or create a session ID (used for sampling consistency)
 function getOrCreateSessionId(): string {
   if (typeof sessionStorage === 'undefined') return 'ssr-session';
-  
+
   let sessionId = sessionStorage.getItem('telemetry_session_id');
   if (!sessionId) {
     // Use crypto.getRandomValues for secure random generation
@@ -181,6 +193,7 @@ function getOrCreateSessionId(): string {
 class TelemetryService {
   private vitalBuffer: TelemetryEvent[] = [];
   private errorBuffer: ErrorReport[] = [];
+  private eventBuffer: CustomEvent[] = [];
   private sessionId: string;
   private flushTimer: number | null = null;
   private circuitBreaker = new CircuitBreaker();
@@ -207,7 +220,7 @@ class TelemetryService {
   private setupFlushHandlers(): void {
     // Flush on page hide
     window.addEventListener('pagehide', () => this.flush(true));
-    
+
     // Flush on visibility change (when page becomes hidden)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
@@ -223,7 +236,7 @@ class TelemetryService {
     if (this.flushTimer !== null) {
       clearInterval(this.flushTimer);
     }
-    
+
     this.flushTimer = window.setInterval(() => {
       this.flush(false);
     }, FLUSH_INTERVAL_MS);
@@ -267,7 +280,7 @@ class TelemetryService {
 
     const stackHash = simpleHash(error.stack || error.message);
     const dedupeKey = `${error.message}-${stackHash}-${this.getAppVersion()}`;
-    
+
     // Check for duplicate within 1 hour
     const now = Date.now();
     const lastSeen = this.errorDedupeMap.get(dedupeKey);
@@ -278,7 +291,7 @@ class TelemetryService {
 
     // Record this error
     this.errorDedupeMap.set(dedupeKey, now);
-    
+
     // Clean up old entries (older than 1 hour)
     for (const [key, timestamp] of this.errorDedupeMap.entries()) {
       if (now - timestamp > 3600000) {
@@ -306,9 +319,37 @@ class TelemetryService {
     }
   }
 
+  // Send custom event
+  async sendEvent(
+    eventName: string,
+    properties?: Record<string, unknown>
+  ): Promise<void> {
+    // Check privacy settings before collecting
+    if (!shouldCollectTelemetry()) {
+      return;
+    }
+
+    const event: CustomEvent = {
+      session_id: this.sessionId,
+      ts: Date.now(),
+      event_name: eventName,
+      properties: this.sanitizeContext(properties) || {},
+      url: scrubUrl(window.location.href),
+      device: this.getDeviceInfo(),
+      app_version: this.getAppVersion(),
+    };
+
+    this.eventBuffer.push(event);
+
+    // Flush if buffer is full
+    if (this.eventBuffer.length >= MAX_BUFFER_SIZE) {
+      await this.flush(false);
+    }
+  }
+
   private sanitizeStack(stack?: string): string | undefined {
     if (!stack) return undefined;
-    
+
     // Remove file paths, keep only function names and line numbers
     return stack
       .split('\n')
@@ -322,12 +363,12 @@ class TelemetryService {
 
   private sanitizeContext(context?: Record<string, unknown>): Record<string, unknown> | undefined {
     if (!context) return undefined;
-    
+
     // Remove any potential PII from context
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(context)) {
       // Skip keys that might contain PII
-      if (['email', 'phone', 'name', 'address', 'token', 'password'].some(pii => 
+      if (['email', 'phone', 'name', 'address', 'token', 'password'].some(pii =>
         key.toLowerCase().includes(pii)
       )) {
         continue;
@@ -340,18 +381,18 @@ class TelemetryService {
   private getDeviceInfo(): string {
     // Return basic device info without PII
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const isTablet = /iPad|Android/i.test(navigator.userAgent) && 
-                     window.innerWidth > 768;
-    
+    const isTablet = /iPad|Android/i.test(navigator.userAgent) &&
+      window.innerWidth > 768;
+
     if (isTablet) return 'tablet';
     if (isMobile) return 'mobile';
     return 'desktop';
   }
 
   private getAppVersion(): string {
-    return import.meta.env.VITE_APP_VERSION || 
-           document.querySelector('meta[name="version"]')?.getAttribute('content') || 
-           '0.0.0';
+    return import.meta.env.VITE_APP_VERSION ||
+      document.querySelector('meta[name="version"]')?.getAttribute('content') ||
+      '0.0.0';
   }
 
   // Flush buffers to backend
@@ -360,6 +401,7 @@ class TelemetryService {
       console.warn('[Telemetry] Circuit breaker is open, dropping events');
       this.vitalBuffer = [];
       this.errorBuffer = [];
+      this.eventBuffer = [];
       return;
     }
 
@@ -371,6 +413,11 @@ class TelemetryService {
     // Flush errors
     if (this.errorBuffer.length > 0) {
       await this.flushErrors(useSendBeacon);
+    }
+
+    // Flush custom events
+    if (this.eventBuffer.length > 0) {
+      await this.flushEvents(useSendBeacon);
     }
   }
 
@@ -400,6 +447,77 @@ class TelemetryService {
       this.circuitBreaker.recordFailure();
       // Errors are lost, but we don't want to accumulate indefinitely
     }
+  }
+
+  private async flushEvents(useSendBeacon: boolean): Promise<void> {
+    const events = [...this.eventBuffer];
+    this.eventBuffer = [];
+
+    try {
+      // Phase 2: Store events in Supabase for analytics
+      await this.persistEventsToDatabase(events);
+
+      // Also send to external endpoint if configured
+      const EVENTS_ENDPOINT = import.meta.env.VITE_EVENTS_ENDPOINT;
+      if (EVENTS_ENDPOINT) {
+        await this.sendWithRetry(EVENTS_ENDPOINT, events, useSendBeacon);
+      }
+
+      this.circuitBreaker.recordSuccess();
+    } catch (error) {
+      console.error('[Telemetry] Failed to send events:', error);
+      this.circuitBreaker.recordFailure();
+      // Events are lost, but we don't want to accumulate indefinitely
+    }
+  }
+
+  /**
+   * Phase 2: Persist events to Supabase for analytics
+   */
+  private async persistEventsToDatabase(events: CustomEvent[]): Promise<void> {
+    if (events.length === 0) return;
+
+    try {
+      // Type assertion until Supabase types are regenerated
+      const { error } = await supabase
+        .from('telemetry_events' as any)
+        .insert(
+          events.map(event => ({
+            session_id: event.session_id,
+            event_name: event.event_name,
+            event_type: this.inferEventType(event.event_name),
+            properties: event.properties,
+            url: event.url,
+            device: event.device,
+            app_version: event.app_version,
+            ts: event.ts,
+          }))
+        );
+
+      if (error) {
+        console.error('[Telemetry] Database insert failed:', error);
+        throw error;
+      }
+    } catch (err) {
+      // Fail silently - don't break the app if telemetry fails
+      console.warn('[Telemetry] Database persistence failed, events dropped');
+    }
+  }
+
+  /**
+   * Infer event type from event name for categorization
+   */
+  private inferEventType(eventName: string): 'custom' | 'page_view' | 'interaction' | 'conversion' {
+    if (eventName.includes('page_view') || eventName.includes('route_change')) {
+      return 'page_view';
+    }
+    if (eventName.includes('click') || eventName.includes('hover') || eventName.includes('scroll')) {
+      return 'interaction';
+    }
+    if (eventName.includes('submit') || eventName.includes('complete') || eventName.includes('download')) {
+      return 'conversion';
+    }
+    return 'custom';
   }
 
   private async sendWithRetry(
@@ -442,11 +560,11 @@ class TelemetryService {
         const delay = backoff + jitter;
 
         console.log(`[Telemetry] Retry ${attempt + 1}/${MAX_RETRIES} after ${delay.toFixed(0)}ms`);
-        
+
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.sendWithRetry(endpoint, data, false, attempt + 1);
       }
-      
+
       throw error;
     }
   }
@@ -457,10 +575,11 @@ class TelemetryService {
   }
 
   // Get buffer stats for debugging
-  getBufferStats(): { vitals: number; errors: number } {
+  getBufferStats(): { vitals: number; errors: number; events: number } {
     return {
       vitals: this.vitalBuffer.length,
       errors: this.errorBuffer.length,
+      events: this.eventBuffer.length,
     };
   }
 }
@@ -469,12 +588,17 @@ class TelemetryService {
 export const telemetryService = typeof window !== 'undefined' ? new TelemetryService() : null;
 
 // Export convenience functions with SSR safety checks
-export const sendVitals = (vital: WebVitalReport) => 
+export const sendVitals = (vital: WebVitalReport) =>
   telemetryService ? telemetryService.sendVitals(vital) : Promise.resolve();
-export const sendError = (error: Error, context?: Record<string, unknown>) => 
+export const sendError = (error: Error, context?: Record<string, unknown>) =>
   telemetryService ? telemetryService.sendError(error, context) : Promise.resolve();
-export const flushTelemetry = () => 
+export const trackEvent = (eventName: string, properties?: Record<string, unknown>) =>
+  telemetryService ? telemetryService.sendEvent(eventName, properties) : Promise.resolve();
+export const flushTelemetry = () =>
   telemetryService ? telemetryService.forceFlush() : Promise.resolve();
+
+// Export the telemetry instance for debugging
+export const telemetryInstance = telemetryService;
 
 // Export privacy check function for testing
 export { shouldCollectTelemetry, hashWithSalt };

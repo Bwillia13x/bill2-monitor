@@ -49,17 +49,17 @@ export class MerkleChainDB {
       // Get the current root hash from database
       const { data: rootHashData } = await (supabase.rpc as any)('get_merkle_root_hash');
       const previousHash = (rootHashData as string) || '';
-      
+
       // Create hash of current event data
       const timestamp = new Date().toISOString();
       const eventDataHash = await hashData({ eventType, timestamp, data });
-      
+
       // Create current hash by combining previous hash and event data hash
       const currentHash = await hashData({ previousHash, eventDataHash });
-      
+
       // Generate event ID
       const eventId = generateEventId();
-      
+
       // Store in database
       const { data: dbEvent, error } = await (supabase.rpc as any)('add_merkle_event', {
         p_event_id: eventId,
@@ -68,12 +68,12 @@ export class MerkleChainDB {
         p_previous_hash: previousHash,
         p_current_hash: currentHash
       });
-      
+
       if (error) {
         console.error('Error adding merkle event:', error);
         return null;
       }
-      
+
       // Return event object
       return {
         eventId,
@@ -131,7 +131,7 @@ export class MerkleChainDB {
           snapshotsCreated: 0
         };
       }
-      
+
       const stats = data[0];
       return {
         totalEvents: stats.total_events || 0,
@@ -175,7 +175,7 @@ export class MerkleChainDB {
           errorMessage: 'Failed to verify chain'
         };
       }
-      
+
       const result = data[0];
       return {
         isValid: result.is_valid || false,
@@ -202,12 +202,12 @@ export class MerkleChainDB {
       const { data, error } = await (supabase.from as any)('recent_merkle_events')
         .select('*')
         .limit(limit);
-      
+
       if (error) {
         console.error('Error getting recent events:', error);
         return [];
       }
-      
+
       // @ts-ignore - Type will be correct after DB types regenerate
       return (data || []).map((event: any) => ({
         eventId: event.event_id,
@@ -240,7 +240,7 @@ export async function logSignalSubmission(
   exhaustion: number
 ): Promise<MerkleEvent | null> {
   const cci = 10 * (0.4 * satisfaction + 0.6 * (10 - exhaustion));
-  
+
   return globalMerkleChainDB.addEvent('signal_submitted', {
     signalId,
     district,

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BackgroundFX } from "@/components/BackgroundFX";
 import { Header } from "@/components/Header";
 import { Banner } from "@/components/Banner";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTodayAggregate } from "@/hooks/useSignals";
 import { Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { funnelTracker } from "@/lib/funnelTracker";
 
 const PRESETS = [
   { name: "Bold Stake", bg: "bg-gradient-to-br from-red-600 to-red-800", text: "text-white" },
@@ -23,13 +24,39 @@ const SignStudio = () => {
   const [headline, setHeadline] = useState("We're not okay");
   const [subline, setSubline] = useState("Respect teachers. Respect students.");
   const [selectedPreset, setSelectedPreset] = useState(0);
+  const [hasCustomized, setHasCustomized] = useState(false);
 
   const dsm = aggregateData?.avgDissatisfaction ?? 0;
   const band = dsm >= 60 ? "Critical" : dsm >= 40 ? "Rising" : "Lower";
   const preset = PRESETS[selectedPreset];
 
+  // Track sign studio start on mount
+  useEffect(() => {
+    funnelTracker.trackSignCreation('start', {
+      dsm: Math.round(dsm),
+      band,
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Track customization when user changes anything
+  const handleCustomization = (field: 'headline' | 'subline' | 'preset', value: string | number) => {
+    if (!hasCustomized) {
+      setHasCustomized(true);
+      funnelTracker.trackSignCreation('customize', {
+        firstEdit: field,
+      });
+    }
+  };
+
   const handleExport = async () => {
     try {
+      // Track preview step (user is viewing the sign before export)
+      await funnelTracker.trackSignCreation('preview', {
+        headlineLength: headline.length,
+        sublineLength: subline.length,
+        preset: preset.name,
+      });
+
       // Use html-to-image for client-side export
       const { toPng } = await import("html-to-image");
       const node = document.getElementById("sign-canvas");
@@ -45,6 +72,12 @@ const SignStudio = () => {
       link.href = dataUrl;
       link.click();
 
+      // Track download step
+      await funnelTracker.trackSignCreation('download', {
+        format: 'png',
+        preset: preset.name,
+      });
+
       toast.success("Sign exported successfully");
     } catch (error) {
       toast.error("Failed to export sign");
@@ -54,6 +87,12 @@ const SignStudio = () => {
   const handleShare = (platform: "twitter" | "facebook") => {
     const url = window.location.origin;
     const text = `${headline} | Digital Strike Meter: ${Math.round(dsm)} (${band})`;
+
+    // Track share completion (final funnel step)
+    funnelTracker.trackSignCreation('share', {
+      platform,
+      preset: preset.name,
+    });
 
     if (platform === "twitter") {
       window.open(
@@ -91,7 +130,10 @@ const SignStudio = () => {
                 <Input
                   id="headline"
                   value={headline}
-                  onChange={(e) => setHeadline(e.target.value.slice(0, 32))}
+                  onChange={(e) => {
+                    setHeadline(e.target.value.slice(0, 32));
+                    handleCustomization('headline', e.target.value);
+                  }}
                   className="bg-white/5 border-border mt-2"
                 />
                 <div className="text-xs text-muted-foreground mt-1">
@@ -104,7 +146,10 @@ const SignStudio = () => {
                 <Input
                   id="subline"
                   value={subline}
-                  onChange={(e) => setSubline(e.target.value.slice(0, 50))}
+                  onChange={(e) => {
+                    setSubline(e.target.value.slice(0, 50));
+                    handleCustomization('subline', e.target.value);
+                  }}
                   className="bg-white/5 border-border mt-2"
                 />
                 <div className="text-xs text-muted-foreground mt-1">
@@ -118,12 +163,14 @@ const SignStudio = () => {
                   {PRESETS.map((preset, idx) => (
                     <Badge
                       key={preset.name}
-                      onClick={() => setSelectedPreset(idx)}
-                      className={`cursor-pointer h-12 justify-center text-sm ${
-                        selectedPreset === idx
+                      onClick={() => {
+                        setSelectedPreset(idx);
+                        handleCustomization('preset', idx);
+                      }}
+                      className={`cursor-pointer h-12 justify-center text-sm ${selectedPreset === idx
                           ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
                           : ""
-                      }`}
+                        }`}
                     >
                       {preset.name}
                     </Badge>

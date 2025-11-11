@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import { TeacherSignalDailyCount, TeacherSignalStreak } from "@/hooks/useTeacherSignalMetrics";
+import { trackEvent } from "@/lib/telemetry";
+import { HeatmapTooltip } from "@/components/v3/HeatmapTooltip";
 
 interface ContributionHeatmapProps {
   dailyCounts: TeacherSignalDailyCount[];
@@ -27,6 +30,88 @@ export function ContributionHeatmap({
   onCellHover,
 }: ContributionHeatmapProps) {
   const today = new Date().toISOString().split("T")[0];
+
+  // Phase 2: Track heatmap engagement
+  const [hoverCount, setHoverCount] = useState(0);
+  const [clickCount, setClickCount] = useState(0);
+  const mountTime = useRef(Date.now());
+  const hasTrackedView = useRef(false);
+
+  // Track heatmap view on mount (once per session)
+  useEffect(() => {
+    if (!loading && !hasTrackedView.current) {
+      hasTrackedView.current = true;
+      const userId = localStorage.getItem('ds_funnel_user_id') || 'anonymous';
+
+      trackEvent('heatmap_view', {
+        userId,
+        totalDays: dailyCounts.length,
+        currentStreak: streak.currentDays,
+      });
+    }
+  }, [loading, dailyCounts.length, streak.currentDays]);
+
+  // Track time on heatmap when component unmounts
+  useEffect(() => {
+    const startTime = mountTime.current;
+
+    return () => {
+      if (hasTrackedView.current) {
+        const duration = Date.now() - startTime;
+        const userId = localStorage.getItem('ds_funnel_user_id') || 'anonymous';
+
+        trackEvent('heatmap_engagement', {
+          userId,
+          duration,
+          hoverCount,
+          clickCount,
+          engagementScore: hoverCount + clickCount * 2,
+        });
+      }
+    };
+  }, [hoverCount, clickCount]);
+
+  const handleCellHover = (date: string, count: number | null) => {
+    setHoverCount(prev => prev + 1);
+
+    if (onCellHover) {
+      onCellHover(date, count);
+    }
+
+    // Track hover event with debouncing (only every 5th hover to reduce noise)
+    if (hoverCount % 5 === 0) {
+      const userId = localStorage.getItem('ds_funnel_user_id') || 'anonymous';
+      trackEvent('heatmap_hover', {
+        userId,
+        date,
+        count,
+        totalHovers: hoverCount + 1,
+      });
+    }
+  };
+
+  const handleCellClick = (date: string, count: number | null) => {
+    setClickCount(prev => prev + 1);
+    const userId = localStorage.getItem('ds_funnel_user_id') || 'anonymous';
+
+    trackEvent('heatmap_click', {
+      userId,
+      date,
+      count,
+      totalClicks: clickCount + 1,
+    });
+  };
+
+  // Track streak view on mount
+  useEffect(() => {
+    if (!loading && streak.currentDays > 0) {
+      trackEvent('heatmap_streak_view', {
+        current_days: streak.currentDays,
+        longest_days: streak.longestDays,
+        has_active_streak: streak.currentDays > 0,
+      });
+    }
+  }, [loading, streak.currentDays, streak.longestDays]);
 
   const getLevelClass = (count: number | null) => {
     if (count === null) {
@@ -107,14 +192,20 @@ export function ContributionHeatmap({
             {dailyCounts.map((day) => {
               const isToday = day.date === today;
               return (
-                <button
-                  type="button"
+                <HeatmapTooltip
                   key={day.date}
-                  onMouseEnter={() => onCellHover?.(day.date, day.count)}
-                  onFocus={() => onCellHover?.(day.date, day.count)}
-                  className={`h-6 w-6 rounded-sm transition duration-200 ${getLevelClass(day.count)} ${isToday ? "ring-2 ring-emerald-400" : ""}`}
-                  aria-label={`${day.date}: ${renderLabel(day.count)}`}
-                />
+                  date={day.date}
+                  count={day.count}
+                >
+                  <button
+                    type="button"
+                    onMouseEnter={() => handleCellHover(day.date, day.count)}
+                    onFocus={() => handleCellHover(day.date, day.count)}
+                    onClick={() => handleCellClick(day.date, day.count)}
+                    className={`h-6 w-6 rounded-sm transition duration-200 ${getLevelClass(day.count)} ${isToday ? "ring-2 ring-emerald-400" : ""} cursor-pointer`}
+                    aria-label={`${day.date}: ${renderLabel(day.count)}`}
+                  />
+                </HeatmapTooltip>
               );
             })}
           </div>
