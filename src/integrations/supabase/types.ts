@@ -591,6 +591,20 @@ export type Database = {
           visible: number
         }[]
       }
+      get_teachers_signal_metrics: {
+        Args: never
+        Returns: {
+          coverage_goal_pct: number
+          daily_counts: Json
+          division_coverage_pct: number
+          goal_target: number
+          last_updated: string
+          milestones: Json
+          progress_pct: number
+          streak_summary: Json
+          total_stories: number
+        }[]
+      }
       get_today_aggregate: {
         Args: never
         Returns: {
