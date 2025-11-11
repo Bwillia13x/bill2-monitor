@@ -33,36 +33,55 @@ npm run bundle:report
 
 ### Bundle Budget Rules
 
-**All non-vendor JS chunks must be ≤ 300 KB (uncompressed)**
+The bundle budget is configured in `bundle-budget.config.json`:
 
-- **Vendor chunks** (with `-vendor` suffix) are **exempt** from the 300 KB budget
-- Vendor chunks are lazy-loaded and split into separate files
-- Budget is enforced in CI via `npm run bundle:report`
-- Failing the budget check will fail the CI build
-
-### Size Limits
-
-- **JavaScript chunks**: ≤ 300 KB (uncompressed) per non-vendor chunk
-- **Total JavaScript**: No hard limit (code splitting enforced via vendor chunks)
-- **Vendor chunks**: Exempt from limit (must include `-vendor` in filename)
-- **CSS, images, other assets**: Not checked against budget
-
-### Vendor Chunk Naming Convention
-
-**IMPORTANT**: For a chunk to be exempt from the 300 KB budget, it **must** include `-vendor` in the filename.
-
-This is configured in `vite.config.ts`:
-```typescript
-manualChunks: {
-  'recharts-vendor': ['recharts'],
-  'carousel-vendor': ['embla-carousel-react'],
-  'radix-vendor': ['@radix-ui/...'],
-  'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-  'data-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
+```json
+{
+  "perChunkKB": 300,
+  "initialTotalKB": 1200,
+  "vendorExemptions": [
+    "recharts-vendor",
+    "carousel-vendor",
+    "radix-vendor",
+    "react-vendor",
+    "data-vendor"
+  ]
 }
 ```
 
-See `scripts/bundle-report.mjs` for the budget enforcement logic.
+**Two budget types are enforced:**
+
+1. **Per-Chunk Budget**: All non-vendor JS chunks must be ≤ 300 KB (uncompressed)
+2. **Initial Load Total Budget**: Sum of all entrypoint JS chunks must be ≤ 1200 KB
+
+### Size Limits
+
+- **Per-chunk limit**: 300 KB (uncompressed) for non-vendor chunks
+- **Initial load total**: 1200 KB total for all entrypoint JS files
+- **Vendor chunks**: Exempt from per-chunk limit (allowlist-based)
+- **CSS, images, other assets**: Not checked against budget
+
+### Vendor Chunk Exemptions (Allowlist-Based)
+
+**IMPORTANT**: Vendor exemptions are now **allowlist-based** (not pattern-based).
+
+Only chunks matching patterns in `bundle-budget.config.json` → `vendorExemptions` are exempt:
+
+```json
+"vendorExemptions": [
+  "recharts-vendor",
+  "carousel-vendor", 
+  "radix-vendor",
+  "react-vendor",
+  "data-vendor"
+]
+```
+
+A chunk named `custom-vendor-abc.js` will **NOT** be exempt unless `"custom-vendor"` is added to the allowlist.
+
+To add a new vendor chunk:
+1. Configure it in `vite.config.ts` → `build.rollupOptions.output.manualChunks`
+2. Add the pattern to `bundle-budget.config.json` → `vendorExemptions`
 
 ### Running Bundle Checks
 
@@ -75,6 +94,20 @@ npm run bundle:report
 npm run bundle:check
 ```
 
+### Viewing manifest.json & Initial Load
+
+The bundle report uses Vite's `manifest.json` to determine entrypoint chunks:
+
+```bash
+# View manifest (after build)
+cat dist/.vite/manifest.json | jq '.'
+
+# See which chunks are marked as entrypoints
+cat dist/.vite/manifest.json | jq '[.[] | select(.isEntry == true)]'
+```
+
+Entrypoint chunks are marked with 🔑 in the bundle report output.
+
 ### Local Repro
 
 To reproduce bundle size issues locally:
@@ -83,18 +116,23 @@ To reproduce bundle size issues locally:
 # Clean build
 rm -rf dist/
 
-# Production build
+# Production build (generates manifest.json)
 npm run build
 
 # Check bundle report
 npm run bundle:report
+
+# View machine-readable report
+cat bundle-report.json | jq '.'
 ```
 
 The report will show:
-- ✅ Chunks within budget (green checkmark)
+- ✅ Chunks within budget (green checkmark)  
 - ❌ Chunks exceeding budget (red X)
+- 🔑 Entrypoint chunks (initial load)
 - File sizes in KB
-- Vendor chunk exemptions
+- Vendor chunk exemptions (`exempt` in budget column)
+- Initial load total vs budget
 
 ### CI Bundle Budget
 
@@ -666,3 +704,154 @@ For questions or issues with tests:
 2. Review existing test files for examples
 3. Check CI logs for failure details
 4. Open an issue with test output and steps to reproduce
+
+
+## Telemetry Testing
+
+### How to Simulate Consent/DNT in Tests
+
+The telemetry system respects user consent and Do Not Track (DNT) settings. Here's how to test different scenarios:
+
+#### Simulating User Consent
+
+```typescript
+// Mock localStorage to simulate consent granted
+global.localStorage.setItem('telemetryConsent', 'granted');
+
+// Mock localStorage to simulate consent denied
+global.localStorage.setItem('telemetryConsent', 'denied');
+
+// Mock no consent decision yet
+global.localStorage.removeItem('telemetryConsent');
+```
+
+#### Simulating DNT Settings
+
+```typescript
+// Mock DNT enabled (user prefers not to be tracked)
+Object.defineProperty(navigator, 'doNotTrack', {
+  value: '1',
+  configurable: true,
+});
+
+// Mock DNT disabled
+Object.defineProperty(navigator, 'doNotTrack', {
+  value: '0',
+  configurable: true,
+});
+```
+
+#### Testing Telemetry Status
+
+```typescript
+import { getTelemetryStatus } from '@/lib/telemetry';
+
+// Check if telemetry would collect data
+const status = getTelemetryStatus();
+
+console.log(status);
+// {
+//   enabled: true,
+//   consent: 'granted',
+//   dntRespected: true,
+//   dntActive: false,
+//   sampleRate: 1.0,
+//   isCollecting: true
+// }
+```
+
+#### Environment Variables for Tests
+
+Set these in your test setup or `.env.test`:
+
+```bash
+# Enable telemetry in tests
+VITE_TELEMETRY_ENABLED=true
+
+# Set sample rate (0.0 = no sampling, 1.0 = 100%)
+VITE_TELEMETRY_SAMPLE_RATE=1.0
+
+# Respect DNT (default: true)
+VITE_TELEMETRY_RESPECT_DNT=true
+
+# Use a test salt for hashing
+VITE_ANON_ID_SALT=test-salt-for-testing
+```
+
+#### Example Test
+
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest';
+import { getTelemetryStatus, sendVitals } from '@/lib/telemetry';
+
+describe('Telemetry Privacy Controls', () => {
+  beforeEach(() => {
+    // Reset localStorage
+    global.localStorage.clear();
+  });
+
+  it('should not collect when consent is denied', () => {
+    global.localStorage.setItem('telemetryConsent', 'denied');
+    
+    const status = getTelemetryStatus();
+    expect(status.isCollecting).toBe(false);
+    expect(status.consent).toBe('denied');
+  });
+
+  it('should not collect when DNT is enabled and respected', () => {
+    global.localStorage.setItem('telemetryConsent', 'granted');
+    
+    Object.defineProperty(navigator, 'doNotTrack', {
+      value: '1',
+      configurable: true,
+    });
+    
+    const status = getTelemetryStatus();
+    expect(status.isCollecting).toBe(false);
+    expect(status.dntActive).toBe(true);
+  });
+
+  it('should collect when consent granted and DNT disabled', () => {
+    global.localStorage.setItem('telemetryConsent', 'granted');
+    
+    Object.defineProperty(navigator, 'doNotTrack', {
+      value: '0',
+      configurable: true,
+    });
+    
+    const status = getTelemetryStatus();
+    expect(status.isCollecting).toBe(true);
+  });
+});
+```
+
+### Testing HMAC-SHA-256 Hashing
+
+```typescript
+import { hashSessionId } from '@/lib/crypto';
+
+describe('Session ID Hashing', () => {
+  it('should produce deterministic HMAC-SHA-256 hashes', async () => {
+    const input = 'session-123';
+    const salt = 'test-salt';
+    
+    const hash1 = await hashSessionId(input, salt);
+    const hash2 = await hashSessionId(input, salt);
+    
+    expect(hash1).toBe(hash2);
+    expect(hash1).toMatch(/^[0-9a-f]{64}$/); // 64 hex chars
+  });
+
+  it('should produce different hashes for different salts', async () => {
+    const input = 'session-123';
+    
+    const hash1 = await hashSessionId(input, 'salt-1');
+    const hash2 = await hashSessionId(input, 'salt-2');
+    
+    expect(hash1).not.toBe(hash2);
+  });
+});
+```
+
+See `tests/crypto.test.ts` for comprehensive HMAC hashing tests.
+

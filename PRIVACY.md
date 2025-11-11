@@ -6,11 +6,11 @@ Digital Strike takes user privacy seriously. This document outlines our privacy 
 
 ## Quick Reference
 
-**Want to disable all telemetry?** Set `TELEMETRY_ENABLED=false` in your `.env` file.
+**Want to disable all telemetry?** Set `VITE_TELEMETRY_ENABLED=false` in your `.env` file.
 
-**Want to reduce telemetry?** Set `TELEMETRY_SAMPLE_RATE=0.1` (10%) in your `.env` file.
+**Want to reduce telemetry?** Set `VITE_TELEMETRY_SAMPLE_RATE=0.1` (10%) in your `.env` file.
 
-**Respect Do Not Track?** Set `TELEMETRY_RESPECT_DNT=true` (default).
+**Respect Do Not Track?** Set `VITE_TELEMETRY_RESPECT_DNT=true` (default).
 
 ## Telemetry Privacy Guardrails
 
@@ -20,24 +20,24 @@ All telemetry can be controlled via environment variables in `.env`:
 
 ```bash
 # Enable/disable telemetry collection (set to false to completely disable)
-TELEMETRY_ENABLED=false
+VITE_TELEMETRY_ENABLED=false
 
 # Sampling rate for telemetry (0.0 to 1.0)
 # 0.0 = no sampling, 1.0 = 100% sampling
-TELEMETRY_SAMPLE_RATE=0.0
+VITE_TELEMETRY_SAMPLE_RATE=0.0
 
 # Respect Do Not Track (DNT) browser setting
 # When true, telemetry is disabled if user has DNT enabled
-TELEMETRY_RESPECT_DNT=true
+VITE_TELEMETRY_RESPECT_DNT=true
 
 # Salt for hashing anonymous client IDs
 # Change this to a random string to anonymize user tracking
-ANON_ID_SALT="change_me_to_random_string_in_production"
+VITE_ANON_ID_SALT="change_me_to_random_string_in_production"
 ```
 
 ### Global Toggle
 
-**`TELEMETRY_ENABLED`** (default: `true`)
+**`VITE_TELEMETRY_ENABLED`** (default: `true`)
 
 - When set to `false`, **no telemetry is collected** regardless of other settings
 - This is the master switch for all telemetry functionality
@@ -45,7 +45,7 @@ ANON_ID_SALT="change_me_to_random_string_in_production"
 
 ### Sampling Control
 
-**`TELEMETRY_SAMPLE_RATE`** (default: `1.0`)
+**`VITE_TELEMETRY_SAMPLE_RATE`** (default: `1.0`)
 
 - Controls what percentage of users send telemetry
 - Value must be between `0.0` and `1.0`
@@ -58,7 +58,7 @@ ANON_ID_SALT="change_me_to_random_string_in_production"
 
 ### Do Not Track (DNT) Support
 
-**`TELEMETRY_RESPECT_DNT`** (default: `true`)
+**`VITE_TELEMETRY_RESPECT_DNT`** (default: `true`)
 
 - When enabled, respects the browser's Do Not Track (DNT) setting
 - If user has DNT enabled (`navigator.doNotTrack === '1'` or `'yes'`), no telemetry is collected
@@ -67,13 +67,23 @@ ANON_ID_SALT="change_me_to_random_string_in_production"
 
 ### Anonymous ID Hashing
 
-**`ANON_ID_SALT`** (default: `"default-salt-change-in-production"`)
+**`VITE_VITE_ANON_ID_SALT`** (default: `"default-salt-change-in-production"`)
 
-- Used to hash session IDs and any stable client identifiers
+- Used to hash session IDs and any stable client identifiers with **HMAC-SHA-256**
 - **Must be changed to a random string in production**
+- Hashes are **obfuscated** (HMAC-SHA-256), not reversible; do not treat as cryptographic identity
 - Ensures that even if data is leaked, user IDs cannot be reverse-engineered
 - Rotate periodically for additional security
 - Never commit production salts to version control
+
+### Consent Requirement
+
+**User Consent** (default: required)
+
+- Telemetry only collects data when user has explicitly granted consent
+- Consent banner appears on first visit
+- User choice is stored in `localStorage` as `telemetryConsent=granted|denied`
+- Users can opt out at any time by denying consent or clearing browser data
 
 ## Data Collection Practices
 
@@ -114,15 +124,21 @@ All telemetry data is automatically:
 2. **Path Truncation**: Long paths truncated to 3 segments
    - `/very/long/path/to/resource` → `/very/long/path/...`
 
-3. **Session ID Hashing**: Session IDs hashed with salt
+3. **Session ID Hashing**: Session IDs hashed with HMAC-SHA-256 and salt
    - Original: `uuid-12345-67890`
-   - Hashed: `a7b3c9d2e8f1` (irreversible without salt)
+   - Hashed: `a7b3c9d2e8f1a4b6c8d0e2f4` (64 hex chars, irreversible without salt)
+   - Uses cryptographic HMAC (keyed-hash message authentication code)
+   - Not reversible or brute-forceable without knowing the salt
 
-4. **Stack Trace Sanitization**: File paths removed, only function names kept
+4. **Stack Trace Hashing**: Error stack traces hashed with HMAC-SHA-256
+   - Ensures error deduplication without storing plaintext stack traces
+   - Stack hash changes if salt is rotated
+
+5. **Stack Trace Sanitization**: File paths removed, only function names kept
    - Full path: `https://example.com/assets/app.js:42:10`
    - Sanitized: `app.js:42:10`
 
-5. **Context Filtering**: Removes potential PII from error context
+6. **Context Filtering**: Removes potential PII from error context
    - Keys containing: `email`, `phone`, `name`, `address`, `token`, `password` are excluded
 
 ## Telemetry Flow
@@ -132,9 +148,9 @@ All telemetry data is automatically:
 ```
 User Action → Web Vitals/Error → Privacy Checks → Buffer → Flush → Backend
                                        ↓
-                         Check: TELEMETRY_ENABLED
-                         Check: TELEMETRY_SAMPLE_RATE
-                         Check: TELEMETRY_RESPECT_DNT
+                         Check: VITE_TELEMETRY_ENABLED
+                         Check: VITE_TELEMETRY_SAMPLE_RATE
+                         Check: VITE_TELEMETRY_RESPECT_DNT
                          Check: Circuit Breaker
                                        ↓
                               Scrub & Hash Data
@@ -142,10 +158,11 @@ User Action → Web Vitals/Error → Privacy Checks → Buffer → Flush → Bac
 
 ### Privacy Check Order
 
-1. **`TELEMETRY_ENABLED`**: Is telemetry globally enabled?
-2. **`TELEMETRY_RESPECT_DNT`**: Is DNT enabled and should we respect it?
-3. **`TELEMETRY_SAMPLE_RATE`**: Is this session sampled for collection?
-4. **Circuit Breaker**: Is the backend responsive?
+1. **`VITE_VITE_TELEMETRY_ENABLED`**: Is telemetry globally enabled?
+2. **User Consent**: Has user explicitly granted consent?
+3. **`VITE_VITE_TELEMETRY_RESPECT_DNT`**: Is DNT enabled and should we respect it?
+4. **`VITE_VITE_TELEMETRY_SAMPLE_RATE`**: Is this session sampled for collection?
+5. **Circuit Breaker**: Is the backend responsive?
 
 If any check fails, **no data is collected**.
 
@@ -192,7 +209,7 @@ VITE_ERROR_ENDPOINT="/api/custom-errors"
 
 Users can opt out of telemetry by:
 
-1. **Browser DNT**: Enable Do Not Track in browser settings (if `TELEMETRY_RESPECT_DNT=true`)
+1. **Browser DNT**: Enable Do Not Track in browser settings (if `VITE_TELEMETRY_RESPECT_DNT=true`)
 2. **Client-side**: Application can provide UI to disable telemetry
 3. **Server-side**: Contact us to request data deletion
 
@@ -218,7 +235,7 @@ To request deletion of your data:
 - ✅ Privacy by design: Default settings respect user privacy
 - ✅ Right to access: Users can request their data
 - ✅ Right to deletion: Users can request deletion
-- ✅ Right to object: Users can opt-out via DNT or `TELEMETRY_ENABLED=false`
+- ✅ Right to object: Users can opt-out via DNT or `VITE_TELEMETRY_ENABLED=false`
 
 ### CCPA (California Consumer Privacy Act)
 
@@ -244,10 +261,10 @@ npm test tests/telemetry-privacy.test.ts
 ```
 
 Tests verify:
-- ✅ `TELEMETRY_ENABLED=false` prevents all collection
-- ✅ `TELEMETRY_SAMPLE_RATE=0.0` prevents all collection
-- ✅ DNT header is respected when `TELEMETRY_RESPECT_DNT=true`
-- ✅ Session IDs are hashed with `ANON_ID_SALT`
+- ✅ `VITE_TELEMETRY_ENABLED=false` prevents all collection
+- ✅ `VITE_TELEMETRY_SAMPLE_RATE=0.0` prevents all collection
+- ✅ DNT header is respected when `VITE_TELEMETRY_RESPECT_DNT=true`
+- ✅ Session IDs are hashed with `VITE_ANON_ID_SALT`
 - ✅ Hashes are consistent and irreversible
 
 ### Verify Configuration
