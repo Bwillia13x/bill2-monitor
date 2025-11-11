@@ -1,0 +1,414 @@
+{
+  "timestamp": "2025-11-11T01:01:05.304Z",
+  "config": {
+    "perChunkKB": 300,
+    "initialTotalKB": 1200,
+    "vendorExemptions": [
+      "recharts-vendor",
+      "carousel-vendor",
+      "radix-vendor",
+      "react-vendor",
+      "data-vendor"
+    ]
+  },
+  "summary": {
+    "totalChunks": 45,
+    "totalSize": 15906812,
+    "jsSize": 1518679,
+    "cssSize": 110178
+  },
+  "initialLoad": {
+    "total": 1064008,
+    "totalKB": 1039.0703125,
+    "chunks": [
+      {
+        "name": "recharts-vendor-BQW5shum.js",
+        "size": 528875,
+        "sizeKB": 516.4794921875
+      },
+      {
+        "name": "index-CXB08_NC.js",
+        "size": 217253,
+        "sizeKB": 212.1611328125
+      },
+      {
+        "name": "data-vendor-BepwMGA0.js",
+        "size": 192540,
+        "sizeKB": 188.02734375
+      },
+      {
+        "name": "radix-vendor-Cpk2piGB.js",
+        "size": 105728,
+        "sizeKB": 103.25
+      },
+      {
+        "name": "react-vendor-BJ-0jzYF.js",
+        "size": 19612,
+        "sizeKB": 19.15234375
+      }
+    ]
+  },
+  "violations": [],
+  "allChunks": [
+    {
+      "name": "sign-truth-C-7RrC_P.png",
+      "size": 2913313,
+      "sizeKB": 2845.0322265625,
+      "type": "other",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "sign-count-class-size-QapakaNY.png",
+      "size": 2879509,
+      "sizeKB": 2812.0205078125,
+      "type": "other",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "sign-30-not-ok-C7EDfPym.png",
+      "size": 2873200,
+      "sizeKB": 2805.859375,
+      "type": "other",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "sign-evidence-not-coordination-LchlwiMp.png",
+      "size": 2817122,
+      "sizeKB": 2751.095703125,
+      "type": "other",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "sign-demands-Dplb5Dkl.png",
+      "size": 2794811,
+      "sizeKB": 2729.3076171875,
+      "type": "other",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "recharts-vendor-BQW5shum.js",
+      "size": 528875,
+      "sizeKB": 516.4794921875,
+      "type": "js",
+      "isVendor": true,
+      "isEntrypoint": true
+    },
+    {
+      "name": "index-CXB08_NC.js",
+      "size": 217253,
+      "sizeKB": 212.1611328125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": true
+    },
+    {
+      "name": "data-vendor-BepwMGA0.js",
+      "size": 192540,
+      "sizeKB": 188.02734375,
+      "type": "js",
+      "isVendor": true,
+      "isEntrypoint": true
+    },
+    {
+      "name": "Voices-Dek35bgU.js",
+      "size": 127575,
+      "sizeKB": 124.5849609375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "index-DADqLLqS.css",
+      "size": 110178,
+      "sizeKB": 107.595703125,
+      "type": "css",
+      "isVendor": false,
+      "isEntrypoint": true
+    },
+    {
+      "name": "radix-vendor-Cpk2piGB.js",
+      "size": 105728,
+      "sizeKB": 103.25,
+      "type": "js",
+      "isVendor": true,
+      "isEntrypoint": true
+    },
+    {
+      "name": "Engage-CC-E3DF6.js",
+      "size": 86405,
+      "sizeKB": 84.3798828125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Auth-CXBAVexV.js",
+      "size": 56866,
+      "sizeKB": 55.533203125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "V2Index-CtpoIeGs.js",
+      "size": 35960,
+      "sizeKB": 35.1171875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "AdvisoryBoard-5_lAwuYy.js",
+      "size": 23064,
+      "sizeKB": 22.5234375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "react-vendor-BJ-0jzYF.js",
+      "size": 19612,
+      "sizeKB": 19.15234375,
+      "type": "js",
+      "isVendor": true,
+      "isEntrypoint": true
+    },
+    {
+      "name": "Methods-OazMXCPQ.js",
+      "size": 18785,
+      "sizeKB": 18.3447265625,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Press-DqRRXRXu.js",
+      "size": 15791,
+      "sizeKB": 15.4208984375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "index-VDAUHfGj.js",
+      "size": 13000,
+      "sizeKB": 12.6953125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "PersonalDashboard-DLT2tPhd.js",
+      "size": 12477,
+      "sizeKB": 12.1845703125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "CoverageDial-BTW0UIW5.js",
+      "size": 9928,
+      "sizeKB": 9.6953125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "ModerationDashboard-CaOxx-qD.js",
+      "size": 8421,
+      "sizeKB": 8.2236328125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "useVoices-BgEXN7qv.js",
+      "size": 8294,
+      "sizeKB": 8.099609375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "StoryWall-CyKactOj.js",
+      "size": 6374,
+      "sizeKB": 6.224609375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "BootstrapVisualizer-B9_8RWqZ.js",
+      "size": 5922,
+      "sizeKB": 5.783203125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "SignStudio-BYoMraW9.js",
+      "size": 5091,
+      "sizeKB": 4.9716796875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "checkbox-HJLzHxR2.js",
+      "size": 4243,
+      "sizeKB": 4.1435546875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Pulse-DtF0zpIa.js",
+      "size": 3995,
+      "sizeKB": 3.9013671875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Header-Z4ORhO51.js",
+      "size": 2677,
+      "sizeKB": 2.6142578125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "BackgroundFX-D60oLjMD.js",
+      "size": 1538,
+      "sizeKB": 1.501953125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "useMicroPoll-ICmmbiGm.js",
+      "size": 1531,
+      "sizeKB": 1.4951171875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "useSignals-D9NaagWg.js",
+      "size": 1272,
+      "sizeKB": 1.2421875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "tabs-CmqYahS4.js",
+      "size": 1152,
+      "sizeKB": 1.125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "NotFound-DzkVCDO1.js",
+      "size": 713,
+      "sizeKB": 0.6962890625,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "file-text-CR-J2LES.js",
+      "size": 534,
+      "sizeKB": 0.521484375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Banner-mkJLq-x0.js",
+      "size": 498,
+      "sizeKB": 0.486328125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Logo-8yMcd2Ud.js",
+      "size": 489,
+      "sizeKB": 0.4775390625,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "Panel-BMkaMuyD.js",
+      "size": 445,
+      "sizeKB": 0.4345703125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "scale-DP_6ZwV7.js",
+      "size": 360,
+      "sizeKB": 0.3515625,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "gating-BlOJXhrN.js",
+      "size": 347,
+      "sizeKB": 0.3388671875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "book-open-CVetlGBw.js",
+      "size": 275,
+      "sizeKB": 0.2685546875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "award-DpMQWiEE.js",
+      "size": 271,
+      "sizeKB": 0.2646484375,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "code-DAm5XP9b.js",
+      "size": 181,
+      "sizeKB": 0.1767578125,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "filter-C1L-P9pw.js",
+      "size": 158,
+      "sizeKB": 0.154296875,
+      "type": "js",
+      "isVendor": false,
+      "isEntrypoint": false
+    },
+    {
+      "name": "carousel-vendor-DAE5b4ii.js",
+      "size": 39,
+      "sizeKB": 0.0380859375,
+      "type": "js",
+      "isVendor": true,
+      "isEntrypoint": false
+    }
+  ]
+}

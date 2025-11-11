@@ -1,15 +1,33 @@
 // Telemetry collection and transmission
 // Buffers Web Vitals and error reports, flushes on pagehide/visibilitychange
 // Implements privacy scrubbing, retries with jitter, and circuit breaking
-// Respects privacy flags: TELEMETRY_ENABLED, TELEMETRY_SAMPLE_RATE, TELEMETRY_RESPECT_DNT
+// Respects privacy flags: VITE_TELEMETRY_ENABLED, VITE_TELEMETRY_SAMPLE_RATE, VITE_TELEMETRY_RESPECT_DNT
 
 import type { WebVitalReport } from './webVitals';
+import { hashSessionId } from './crypto';
+import { getTelemetryConsent } from '../components/TelemetryConsentBanner';
 
-// Privacy Configuration
-const TELEMETRY_ENABLED = import.meta.env.TELEMETRY_ENABLED !== 'false'; // Default: true
-const TELEMETRY_SAMPLE_RATE = parseFloat(import.meta.env.TELEMETRY_SAMPLE_RATE || '1.0'); // Default: 100%
-const TELEMETRY_RESPECT_DNT = import.meta.env.TELEMETRY_RESPECT_DNT !== 'false'; // Default: true
-const ANON_ID_SALT = import.meta.env.ANON_ID_SALT || 'default-salt-change-in-production';
+// Privacy Configuration - ALL env vars must use VITE_ prefix for client access
+const TELEMETRY_ENABLED = import.meta.env.VITE_TELEMETRY_ENABLED === 'true'; // Default: false (opt-in)
+const TELEMETRY_SAMPLE_RATE = parseFloat(import.meta.env.VITE_TELEMETRY_SAMPLE_RATE || '1.0'); // Default: 100%
+const TELEMETRY_RESPECT_DNT = import.meta.env.VITE_TELEMETRY_RESPECT_DNT !== 'false'; // Default: true
+const ANON_ID_SALT = import.meta.env.VITE_ANON_ID_SALT || 'default-salt-change-in-production';
+
+// Dev-time warning for missing env vars
+if (typeof window !== 'undefined' && import.meta.env.MODE === 'development') {
+  const missingVars = [];
+  if (import.meta.env.VITE_TELEMETRY_ENABLED === undefined) missingVars.push('VITE_TELEMETRY_ENABLED');
+  if (import.meta.env.VITE_TELEMETRY_SAMPLE_RATE === undefined) missingVars.push('VITE_TELEMETRY_SAMPLE_RATE');
+  if (import.meta.env.VITE_TELEMETRY_RESPECT_DNT === undefined) missingVars.push('VITE_TELEMETRY_RESPECT_DNT');
+  if (import.meta.env.VITE_ANON_ID_SALT === undefined) missingVars.push('VITE_ANON_ID_SALT');
+  
+  if (missingVars.length > 0) {
+    console.warn(
+      '[Telemetry] Missing environment variables (check .env.local):',
+      missingVars.join(', ')
+    );
+  }
+}
 
 // Endpoint Configuration
 const TELEMETRY_ENDPOINT = import.meta.env.VITE_TELEMETRY_ENDPOINT || '/api/telemetry';
@@ -104,26 +122,16 @@ function scrubUrl(url: string): string {
   }
 }
 
-// Generate a simple hash from a string
-function simpleHash(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(36);
-}
-
-// Hash an ID with salt for anonymization
-function hashWithSalt(id: string, salt: string): string {
-  return simpleHash(`${id}:${salt}`);
-}
-
 // Check if telemetry should be collected based on privacy settings
 function shouldCollectTelemetry(): boolean {
   // Check if telemetry is globally disabled
   if (!TELEMETRY_ENABLED) {
+    return false;
+  }
+
+  // Check user consent (must be explicitly granted)
+  const consent = getTelemetryConsent();
+  if (consent !== 'granted') {
     return false;
   }
 
@@ -158,6 +166,17 @@ function shouldCollectTelemetry(): boolean {
   return true;
 }
 
+// Simple hash for legacy compatibility (sampling only, not for anonymization)
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
 // Get or create a session ID (used for sampling consistency)
 function getOrCreateSessionId(): string {
   if (typeof sessionStorage === 'undefined') return 'ssr-session';
@@ -187,10 +206,21 @@ class TelemetryService {
   private errorDedupeMap = new Map<string, number>();
 
   constructor() {
-    // Generate base session ID and hash it with salt for anonymization
-    const baseSessionId = this.generateBaseSessionId();
-    this.sessionId = hashWithSalt(baseSessionId, ANON_ID_SALT);
+    // Use async initialization for HMAC hashing
+    this.initializeSessionId();
     this.setupFlushHandlers();
+  }
+
+  private async initializeSessionId(): Promise<void> {
+    // Generate base session ID and hash it with HMAC-SHA-256 for anonymization
+    const baseSessionId = this.generateBaseSessionId();
+    try {
+      this.sessionId = await hashSessionId(baseSessionId, ANON_ID_SALT);
+    } catch (error) {
+      console.error('[Telemetry] Failed to hash session ID, using fallback:', error);
+      // Fallback: use simple hash if HMAC fails
+      this.sessionId = simpleHash(`${baseSessionId}:${ANON_ID_SALT}`);
+    }
   }
 
   private generateBaseSessionId(): string {
@@ -265,7 +295,15 @@ class TelemetryService {
       return;
     }
 
-    const stackHash = simpleHash(error.stack || error.message);
+    // Use HMAC-SHA-256 for stack hash (privacy-preserving)
+    let stackHash: string;
+    try {
+      stackHash = await hashSessionId(error.stack || error.message, ANON_ID_SALT);
+    } catch (hashError) {
+      // Fallback to simple hash if HMAC fails
+      stackHash = simpleHash(error.stack || error.message);
+    }
+    
     const dedupeKey = `${error.message}-${stackHash}-${this.getAppVersion()}`;
     
     // Check for duplicate within 1 hour
@@ -477,9 +515,42 @@ export const flushTelemetry = () =>
   telemetryService ? telemetryService.forceFlush() : Promise.resolve();
 
 // Export privacy check function for testing
-export { shouldCollectTelemetry, hashWithSalt };
+export { shouldCollectTelemetry };
 
-// Export configuration for testing
+// Export telemetry status for diagnostics and testing
+export interface TelemetryStatus {
+  enabled: boolean;
+  consent: 'granted' | 'denied' | null;
+  dntRespected: boolean;
+  dntActive: boolean;
+  sampleRate: number;
+  isCollecting: boolean;
+}
+
+/**
+ * Get the current telemetry status for diagnostics and testing
+ * Returns all relevant flags that determine whether telemetry is active
+ */
+export function getTelemetryStatus(): TelemetryStatus {
+  const consent = getTelemetryConsent();
+  
+  let dntActive = false;
+  if (typeof navigator !== 'undefined') {
+    const dnt = (navigator as any).doNotTrack || (window as any).doNotTrack || (navigator as any).msDoNotTrack;
+    dntActive = dnt === '1' || dnt === 'yes';
+  }
+
+  return {
+    enabled: TELEMETRY_ENABLED,
+    consent,
+    dntRespected: TELEMETRY_RESPECT_DNT,
+    dntActive,
+    sampleRate: TELEMETRY_SAMPLE_RATE,
+    isCollecting: shouldCollectTelemetry(),
+  };
+}
+
+// Export configuration for testing (legacy compatibility)
 export const getTelemetryConfig = () => ({
   enabled: TELEMETRY_ENABLED,
   sampleRate: TELEMETRY_SAMPLE_RATE,
