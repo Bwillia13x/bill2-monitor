@@ -13,8 +13,14 @@ import { DistrictLeaderboard } from "@/components/viral/DistrictLeaderboard";
 import { UrgencyCountdown } from "@/components/viral/UrgencyCountdown";
 import { SocialProofBanner } from "@/components/viral/SocialProofBanner";
 import { VideoGalleryHero } from "@/components/storywall/VideoGalleryHero";
-import { usePressTileDownload } from "@/components/v3/PressTileGenerator";
+import { usePressTileDownload } from "@/components/v3/usePressTileDownload";
 import { useCCI, useCCISparkline } from "@/hooks/useMetrics";
+import {
+  TeacherSignalMilestone,
+  useTeacherSignalMetrics,
+} from "@/hooks/useTeacherSignalMetrics";
+import { TeachersSignalThermometer } from "@/components/v3/TeachersSignalThermometer";
+import { ContributionHeatmap } from "@/components/v3/ContributionHeatmap";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logSignalSubmission } from "@/lib/merkleClient";
@@ -46,11 +52,12 @@ export default function V3IndexRefined() {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [methodologyModalOpen, setMethodologyModalOpen] = useState(false);
   const [referralCode, setReferralCode] = useState("");
+  const { data: signalMetrics, isLoading: signalLoading } = useTeacherSignalMetrics();
 
   // Fetch CCI data
   const { data: cciData, isLoading: cciLoading } = useCCI(7);
   const { data: sparklineData, isLoading: sparklineLoading } = useCCISparkline(7);
-  
+
   // Use CCI data or defaults
   const cciValue = cciData?.cci ?? 47.6;
   const cciChange = cciData?.cci_change_1d ?? null;
@@ -65,6 +72,13 @@ export default function V3IndexRefined() {
     MOCK_DISTRICTS
   );
 
+  const handleSignalMilestoneShare = (milestone: TeacherSignalMilestone) => {
+    handleShareClick();
+    toast.success(
+      milestone.shareCopy || "Teachers' Signal milestone unlocked! Share to amplify."
+    );
+  };
+
   const handleSubmit = async (data: {
     weeklyComparison: 'better' | 'same' | 'worse';
     satisfaction: number;
@@ -75,7 +89,7 @@ export default function V3IndexRefined() {
     try {
       // Since auth is disabled, use a temporary user ID
       // In production, this would be auth.uid()
-      const tempUserId = localStorage.getItem('temp_user_id') || 
+      const tempUserId = localStorage.getItem('temp_user_id') ||
         (() => {
           const id = crypto.randomUUID();
           localStorage.setItem('temp_user_id', id);
@@ -100,7 +114,7 @@ export default function V3IndexRefined() {
       }
 
       console.log("CCI submission successful:", data);
-      
+
       // Log to Merkle chain for integrity tracking
       try {
         const signalId = crypto.randomUUID();
@@ -111,7 +125,7 @@ export default function V3IndexRefined() {
           data.satisfaction,
           data.exhaustion
         );
-        
+
         if (result.success) {
           console.log("Signal logged to Merkle chain:", signalId);
         } else {
@@ -121,21 +135,21 @@ export default function V3IndexRefined() {
         console.error("Failed to log to Merkle chain:", merkleError);
         // Don't fail the submission if Merkle logging fails
       }
-      
+
       // Generate referral code
       const code = "CCI-" + Math.random().toString(36).substring(2, 8).toUpperCase();
       setReferralCode(code);
-      
+
       // Update counts
       setSignalNumber(totalN + 1);
       setTodayCount(todayCount + 1);
-      
+
       // Close submit modal
       setSubmitModalOpen(false);
-      
+
       // Show confirmation
       setShowConfirmation(true);
-      
+
       toast.success("Your signal has been recorded!");
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -155,7 +169,7 @@ export default function V3IndexRefined() {
       setSubmitModalOpen(true);
       return;
     }
-    
+
     setShareModalOpen(true);
   };
 
@@ -175,7 +189,7 @@ export default function V3IndexRefined() {
   return (
     <>
       <SocialMetaTags meterValue={cciValue} />
-      <div 
+      <div
         className="min-h-screen text-gray-100"
         style={{
           background: 'linear-gradient(to bottom, #0a0a0a 0%, #111827 50%, #0a0a0a 100%)',
@@ -183,6 +197,25 @@ export default function V3IndexRefined() {
       >
         {/* NEW HERO: Video Gallery */}
         <VideoGalleryHero onUploadClick={() => setVideoUploadModalOpen(true)} />
+
+        <section className="relative py-12 border-t border-primary/20">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <TeachersSignalThermometer
+              metrics={signalMetrics}
+              loading={signalLoading}
+              onSubmitClick={() => setSubmitModalOpen(true)}
+              onShareClick={handleShareClick}
+              onMilestoneShare={handleSignalMilestoneShare}
+            />
+            <div className="mt-8">
+              <ContributionHeatmap
+                dailyCounts={signalMetrics?.daily_counts ?? []}
+                streak={signalMetrics?.streak_summary}
+                loading={signalLoading}
+              />
+            </div>
+          </div>
+        </section>
 
         {/* SECTION 2: Climate Conditions Index */}
         <section className="relative py-16 border-t border-primary/20">
@@ -211,7 +244,7 @@ export default function V3IndexRefined() {
 
             {/* Social Proof Banner */}
             <div className="mt-8">
-              <SocialProofBanner 
+              <SocialProofBanner
                 totalCount={totalN}
                 todayCount={todayCount}
                 activeNow={Math.floor(Math.random() * 15) + 5}

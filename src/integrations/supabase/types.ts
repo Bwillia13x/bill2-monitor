@@ -202,6 +202,42 @@ export type Database = {
         }
         Relationships: []
       }
+      snapshot_logs: {
+        Row: {
+          created_at: string
+          file_count: number | null
+          geographic_coverage: number | null
+          id: string
+          manifest: Json | null
+          timestamp: string
+          total_hash: string | null
+          total_records: number | null
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          file_count?: number | null
+          geographic_coverage?: number | null
+          id?: string
+          manifest?: Json | null
+          timestamp: string
+          total_hash?: string | null
+          total_records?: number | null
+          version: string
+        }
+        Update: {
+          created_at?: string
+          file_count?: number | null
+          geographic_coverage?: number | null
+          id?: string
+          manifest?: Json | null
+          timestamp?: string
+          total_hash?: string | null
+          total_records?: number | null
+          version?: string
+        }
+        Relationships: []
+      }
       pledge_signatures: {
         Row: {
           campaign_id: string
@@ -402,6 +438,30 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          error_message: string
+          error_stack: string | null
+          error_type: string
+          id: string
+          timestamp: string
+        }
+        Insert: {
+          error_message: string
+          error_stack?: string | null
+          error_type: string
+          id?: string
+          timestamp?: string
+        }
+        Update: {
+          error_message?: string
+          error_stack?: string | null
+          error_type?: string
+          id?: string
+          timestamp?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -425,9 +485,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      recent_merkle_events: {
+        Row: {
+          current_hash: string
+          data: Json | null
+          event_id: string
+          event_type: string
+          timestamp: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      add_merkle_event: {
+        Args: {
+          p_event_id: string
+          p_event_type: string
+          p_data: Json
+          p_previous_hash: string
+          p_current_hash: string
+        }
+        Returns: {
+          current_hash: string
+          data: Json | null
+          event_id: string
+          event_type: string
+          previous_hash: string | null
+          timestamp: string
+        }[]
+      }
       get_aggregate_dissatisfaction: {
         Args: never
         Returns: {
@@ -438,6 +524,44 @@ export type Database = {
       }
       get_approved_one_liners_count: { Args: never; Returns: number }
       get_approved_stories_count: { Args: never; Returns: number }
+      get_merkle_chain_stats: {
+        Args: never
+        Returns: {
+          aggregates_updated: number | null
+          first_event_date: string | null
+          last_event_date: string | null
+          root_hash: string | null
+          signals_submitted: number | null
+          snapshots_created: number | null
+          total_events: number | null
+        }[]
+      }
+      get_merkle_root_hash: { Args: never; Returns: string | null }
+      get_latest_snapshot_info: {
+        Args: never
+        Returns: {
+          [key: string]: Json | undefined
+        }[]
+      }
+      store_digital_signature: {
+        Args: {
+          p_signature_type: string
+          p_signed_date: string
+          p_data_hash: string
+          p_signature: string
+          p_public_key: string
+        }
+        Returns: unknown
+      }
+      verify_merkle_chain: {
+        Args: never
+        Returns: {
+          error_message: string | null
+          first_invalid_index: number | null
+          is_valid: boolean | null
+          total_events: number | null
+        }[]
+      }
       get_campaign_coverage: {
         Args: { c_key: string }
         Returns: {
@@ -517,6 +641,20 @@ export type Database = {
           total: number
         }[]
       }
+      get_teachers_signal_metrics: {
+        Args: never
+        Returns: {
+          total_stories: number
+          division_coverage_pct: number
+          goal_target: number
+          coverage_goal_pct: number
+          progress_pct: number
+          milestones: Json
+          daily_counts: Json
+          streak_summary: Json
+          last_updated: string
+        }[]
+      }
       get_privacy_safeguard_ratio: {
         Args: { c_key: string }
         Returns: {
@@ -558,116 +696,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
