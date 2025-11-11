@@ -164,7 +164,14 @@ function getOrCreateSessionId(): string {
   
   let sessionId = sessionStorage.getItem('telemetry_session_id');
   if (!sessionId) {
-    sessionId = `${Date.now()}-${Math.random().toString(36).substring(2)}`;
+    // Use crypto.getRandomValues for secure random generation
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+      sessionId = `${Date.now()}-${Array.from(randomBytes).map(b => b.toString(36)).join('')}`;
+    } else {
+      // Fallback for environments without crypto (should be rare)
+      sessionId = `${Date.now()}-fallback`;
+    }
     sessionStorage.setItem('telemetry_session_id', sessionId);
   }
   return sessionId;

@@ -4,6 +4,14 @@
 
 Digital Strike takes user privacy seriously. This document outlines our privacy practices, data collection policies, and how users can control their data.
 
+## Quick Reference
+
+**Want to disable all telemetry?** Set `TELEMETRY_ENABLED=false` in your `.env` file.
+
+**Want to reduce telemetry?** Set `TELEMETRY_SAMPLE_RATE=0.1` (10%) in your `.env` file.
+
+**Respect Do Not Track?** Set `TELEMETRY_RESPECT_DNT=true` (default).
+
 ## Telemetry Privacy Guardrails
 
 ### Environment Variables
