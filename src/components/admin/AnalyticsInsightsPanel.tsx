@@ -22,62 +22,14 @@ export function AnalyticsInsightsPanel() {
         try {
             setLoading(true);
 
-            // Load funnel data
-            const { data: signFunnelData } = await supabase.rpc('get_funnel_dropoff', {
-                p_funnel_name: 'sign_creation',
-            }) as { data: FunnelDropoff[] | null };
-
-            const { data: signalFunnelData } = await supabase.rpc('get_funnel_dropoff', {
-                p_funnel_name: 'signal_submission',
-            }) as { data: FunnelDropoff[] | null };
-
-            // Load A/B test data
-            const { data: flagsData } = await supabase
-                .from('feature_flags' as any)
-                .select('*')
-                .eq('enabled', true);
-
-            const abTests = [];
-            if (flagsData) {
-                for (const flag of flagsData) {
-                    const { data: rates } = await supabase.rpc('get_ab_test_conversion_rates', {
-                        p_flag_key: flag.flag_key,
-                        p_conversion_event: 'signal_submitted',
-                    }) as { data: ABTestConversionRate[] | null };
-
-                    if (rates && rates.length === 2) {
-                        const analysis = analyzeABTest(
-                            rates[0].variant,
-                            rates[0].exposures,
-                            rates[0].conversions,
-                            rates[1].variant,
-                            rates[1].exposures,
-                            rates[1].conversions
-                        );
-
-                        abTests.push({
-                            flagName: flag.flag_name,
-                            variants: rates,
-                            pValue: analysis.pValue,
-                            uplift: analysis.uplift,
-                        });
-                    }
-                }
-            }
-
-            // Load engagement cohorts
-            const { data: cohortsData } = await supabase.rpc('get_heatmap_engagement_cohorts') as {
-                data: HeatmapEngagementCohort[] | null;
-            };
-
-            // Generate insights
+            // Note: Analytics functions not yet implemented in database
+            // This panel will be functional once funnel and A/B test tables/functions are added
+            
+            // Placeholder for future implementation
             const generatedInsights = generateInsights({
-                funnels: [
-                    ...(signFunnelData ? [{ name: 'Sign Creation', data: signFunnelData }] : []),
-                    ...(signalFunnelData ? [{ name: 'Signal Submission', data: signalFunnelData }] : []),
-                ],
-                abTests,
-                engagementCohorts: cohortsData || undefined,
+                funnels: [],
+                abTests: [],
+                engagementCohorts: undefined,
             });
 
             setInsights(generatedInsights);

@@ -95,7 +95,7 @@ export function AnalyticsDebugPanel() {
     };
 
     const testTrackEvent = () => {
-        telemetryInstance.track('debug_test_event', {
+        telemetryInstance.sendEvent('debug_test_event', {
             source: 'analytics_debug_panel',
             timestamp: new Date().toISOString(),
             test: true,
@@ -204,11 +204,11 @@ export function AnalyticsDebugPanel() {
                                     className="rounded-lg border border-white/10 bg-slate-950/40 p-3 space-y-2 font-mono text-xs"
                                 >
                                     <div className="flex items-center justify-between gap-2">
-                                        <Badge variant="outline" className={getEventBadgeColor(event.eventName)}>
-                                            {event.eventName}
+                                        <Badge variant="outline" className={getEventBadgeColor(event.event_name)}>
+                                            {event.event_name}
                                         </Badge>
                                         <span className="text-muted-foreground">
-                                            {new Date(event.timestamp).toLocaleTimeString()}
+                                            {new Date(event.ts).toLocaleTimeString()}
                                         </span>
                                     </div>
                                     <pre className="text-xs text-muted-foreground overflow-x-auto">

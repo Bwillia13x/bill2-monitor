@@ -16,43 +16,25 @@ export function FeatureFlagDashboard() {
     const [conversionData, setConversionData] = useState<Map<string, ABTestConversionRate[]>>(new Map());
 
     const loadConversionRates = useCallback(async (flagKey: string) => {
-        try {
-            const { data, error } = await supabase.rpc('get_ab_test_conversion_rates', {
-                p_flag_key: flagKey,
-                p_conversion_event: 'signal_submitted', // Default conversion event
-            });
-
-            if (error) throw error;
-
-            setConversionData(prev => new Map(prev).set(flagKey, data || []));
-        } catch (error) {
-            console.error(`Failed to load conversion rates for ${flagKey}:`, error);
-        }
+        // Note: A/B test functions not yet implemented in database
+        // This will be functional once the feature_flags and related tables are added
+        console.log('A/B test analytics not yet implemented for flag:', flagKey);
+        return;
     }, []);
 
     const loadFeatureFlags = useCallback(async () => {
         try {
             setLoading(true);
 
-            // Load feature flags
-            const { data: flagsData, error: flagsError } = await supabase
-                .from('feature_flags' as any)
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (flagsError) throw flagsError;
-            setFlags(flagsData || []);
-
-            // Load conversion data for each flag
-            for (const flag of flagsData || []) {
-                await loadConversionRates(flag.flag_key);
-            }
+            // Note: Feature flags table not yet implemented in database
+            // This dashboard will be functional once feature_flags table is added
+            setFlags([]);
         } catch (error) {
             console.error('Failed to load feature flags:', error);
         } finally {
             setLoading(false);
         }
-    }, [loadConversionRates]);
+    }, []);
 
     useEffect(() => {
         loadFeatureFlags();
