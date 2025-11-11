@@ -47,8 +47,8 @@ export class MerkleChainDB {
   async addEvent(eventType: MerkleEvent['eventType'], data: any): Promise<MerkleEvent | null> {
     try {
       // Get the current root hash from database
-      const { data: rootHashData } = await supabase.rpc('get_merkle_root_hash');
-      const previousHash = rootHashData || '';
+      const { data: rootHashData } = await (supabase.rpc as any)('get_merkle_root_hash');
+      const previousHash = (rootHashData as string) || '';
       
       // Create hash of current event data
       const timestamp = new Date().toISOString();
@@ -61,7 +61,7 @@ export class MerkleChainDB {
       const eventId = generateEventId();
       
       // Store in database
-      const { data: dbEvent, error } = await supabase.rpc('add_merkle_event', {
+      const { data: dbEvent, error } = await (supabase.rpc as any)('add_merkle_event', {
         p_event_id: eventId,
         p_event_type: eventType,
         p_data: data,
@@ -94,12 +94,12 @@ export class MerkleChainDB {
    */
   async getRootHash(): Promise<string> {
     try {
-      const { data, error } = await supabase.rpc('get_merkle_root_hash');
+      const { data, error } = await (supabase.rpc as any)('get_merkle_root_hash');
       if (error) {
         console.error('Error getting root hash:', error);
         return '';
       }
-      return data || '';
+      return (data as string) || '';
     } catch (error) {
       console.error('Failed to get root hash:', error);
       return '';
@@ -119,8 +119,8 @@ export class MerkleChainDB {
     snapshotsCreated: number;
   }> {
     try {
-      const { data, error } = await supabase.rpc('get_merkle_chain_stats');
-      if (error || !data || data.length === 0) {
+      const { data, error } = await (supabase.rpc as any)('get_merkle_chain_stats');
+      if (error || !data || (Array.isArray(data) && data.length === 0)) {
         return {
           totalEvents: 0,
           rootHash: '',
@@ -166,8 +166,8 @@ export class MerkleChainDB {
     errorMessage: string | null;
   }> {
     try {
-      const { data, error } = await supabase.rpc('verify_merkle_chain');
-      if (error || !data || data.length === 0) {
+      const { data, error } = await (supabase.rpc as any)('verify_merkle_chain');
+      if (error || !data || (Array.isArray(data) && data.length === 0)) {
         return {
           isValid: false,
           totalEvents: 0,
@@ -199,8 +199,7 @@ export class MerkleChainDB {
    */
   async getRecentEvents(limit: number = 100): Promise<MerkleEvent[]> {
     try {
-      const { data, error } = await supabase
-        .from('recent_merkle_events')
+      const { data, error } = await (supabase.from as any)('recent_merkle_events')
         .select('*')
         .limit(limit);
       
@@ -209,7 +208,8 @@ export class MerkleChainDB {
         return [];
       }
       
-      return (data || []).map(event => ({
+      // @ts-ignore - Type will be correct after DB types regenerate
+      return (data || []).map((event: any) => ({
         eventId: event.event_id,
         eventType: event.event_type,
         timestamp: event.timestamp,

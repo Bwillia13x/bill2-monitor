@@ -248,12 +248,15 @@ export async function performNightlySigning(
       signedAggregates.push(signed);
       
       // Store signature in database
-      const { error } = await supabase.rpc('store_digital_signature', {
-        p_signature_type: 'daily_aggregate',
-        p_signed_date: aggregate.date,
+      const { error } = await (supabase.rpc as any)('store_digital_signature', {
+        p_signature_id: `${aggregate.date}_aggregate`,
         p_data_hash: signed.signature.dataHash,
         p_signature: signed.signature.signature,
-        p_public_key: signed.signature.publicKey
+        p_public_key: signed.signature.publicKey,
+        p_metadata: {
+          type: 'daily_aggregate',
+          date: aggregate.date
+        }
       });
       
       if (error) {
