@@ -1,10 +1,17 @@
 // Telemetry collection and transmission
 // Buffers Web Vitals and error reports, flushes on pagehide/visibilitychange
 // Implements privacy scrubbing, retries with jitter, and circuit breaking
+// Respects privacy flags: TELEMETRY_ENABLED, TELEMETRY_SAMPLE_RATE, TELEMETRY_RESPECT_DNT
 
 import type { WebVitalReport } from './webVitals';
 
-// Configuration
+// Privacy Configuration
+const TELEMETRY_ENABLED = import.meta.env.TELEMETRY_ENABLED !== 'false'; // Default: true
+const TELEMETRY_SAMPLE_RATE = parseFloat(import.meta.env.TELEMETRY_SAMPLE_RATE || '1.0'); // Default: 100%
+const TELEMETRY_RESPECT_DNT = import.meta.env.TELEMETRY_RESPECT_DNT !== 'false'; // Default: true
+const ANON_ID_SALT = import.meta.env.ANON_ID_SALT || 'default-salt-change-in-production';
+
+// Endpoint Configuration
 const TELEMETRY_ENDPOINT = import.meta.env.VITE_TELEMETRY_ENDPOINT || '/api/telemetry';
 const ERROR_ENDPOINT = import.meta.env.VITE_ERROR_ENDPOINT || '/api/errors';
 const MAX_BUFFER_SIZE = 50;
@@ -108,6 +115,68 @@ function simpleHash(str: string): string {
   return Math.abs(hash).toString(36);
 }
 
+// Hash an ID with salt for anonymization
+function hashWithSalt(id: string, salt: string): string {
+  return simpleHash(`${id}:${salt}`);
+}
+
+// Check if telemetry should be collected based on privacy settings
+function shouldCollectTelemetry(): boolean {
+  // Check if telemetry is globally disabled
+  if (!TELEMETRY_ENABLED) {
+    return false;
+  }
+
+  // Check Do Not Track (DNT) header if respect DNT is enabled
+  if (TELEMETRY_RESPECT_DNT && typeof navigator !== 'undefined') {
+    const dnt = (navigator as any).doNotTrack || (window as any).doNotTrack || (navigator as any).msDoNotTrack;
+    if (dnt === '1' || dnt === 'yes') {
+      return false;
+    }
+  }
+
+  // Check sampling rate
+  if (TELEMETRY_SAMPLE_RATE <= 0) {
+    // 0% sample rate means no collection
+    return false;
+  }
+  
+  if (TELEMETRY_SAMPLE_RATE < 1.0) {
+    // Use a consistent hash-based value per session for sampling
+    // This ensures user either is always sampled or never sampled during their session
+    const sessionId = getOrCreateSessionId();
+    const hashValue = simpleHash(sessionId);
+    // Convert base-36 hash to a number between 0 and 1
+    const hashNum = parseInt(hashValue, 36);
+    const normalized = (hashNum % 1000000) / 1000000; // Normalize to 0-1 range
+    
+    if (normalized > TELEMETRY_SAMPLE_RATE) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Get or create a session ID (used for sampling consistency)
+function getOrCreateSessionId(): string {
+  if (typeof sessionStorage === 'undefined') return 'ssr-session';
+  
+  let sessionId = sessionStorage.getItem('telemetry_session_id');
+  if (!sessionId) {
+    // Use crypto.getRandomValues for secure random generation
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const randomBytes = crypto.getRandomValues(new Uint8Array(16));
+      sessionId = `${Date.now()}-${Array.from(randomBytes).map(b => b.toString(36)).join('')}`;
+    } else {
+      // Fallback for environments without crypto (should be rare)
+      sessionId = `${Date.now()}-fallback`;
+    }
+    sessionStorage.setItem('telemetry_session_id', sessionId);
+  }
+  return sessionId;
+}
+
 // Main telemetry service
 class TelemetryService {
   private vitalBuffer: TelemetryEvent[] = [];
@@ -118,11 +187,13 @@ class TelemetryService {
   private errorDedupeMap = new Map<string, number>();
 
   constructor() {
-    this.sessionId = this.generateSessionId();
+    // Generate base session ID and hash it with salt for anonymization
+    const baseSessionId = this.generateBaseSessionId();
+    this.sessionId = hashWithSalt(baseSessionId, ANON_ID_SALT);
     this.setupFlushHandlers();
   }
 
-  private generateSessionId(): string {
+  private generateBaseSessionId(): string {
     // Use crypto.randomUUID for secure random session ID
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -160,6 +231,11 @@ class TelemetryService {
 
   // Send vitals data
   async sendVitals(vital: WebVitalReport): Promise<void> {
+    // Check privacy settings before collecting
+    if (!shouldCollectTelemetry()) {
+      return;
+    }
+
     const event: TelemetryEvent = {
       session_id: this.sessionId,
       ts: vital.timestamp,
@@ -184,6 +260,11 @@ class TelemetryService {
     error: Error,
     context?: Record<string, unknown>
   ): Promise<void> {
+    // Check privacy settings before collecting
+    if (!shouldCollectTelemetry()) {
+      return;
+    }
+
     const stackHash = simpleHash(error.stack || error.message);
     const dedupeKey = `${error.message}-${stackHash}-${this.getAppVersion()}`;
     
@@ -394,3 +475,14 @@ export const sendError = (error: Error, context?: Record<string, unknown>) =>
   telemetryService ? telemetryService.sendError(error, context) : Promise.resolve();
 export const flushTelemetry = () => 
   telemetryService ? telemetryService.forceFlush() : Promise.resolve();
+
+// Export privacy check function for testing
+export { shouldCollectTelemetry, hashWithSalt };
+
+// Export configuration for testing
+export const getTelemetryConfig = () => ({
+  enabled: TELEMETRY_ENABLED,
+  sampleRate: TELEMETRY_SAMPLE_RATE,
+  respectDNT: TELEMETRY_RESPECT_DNT,
+  hasCustomSalt: ANON_ID_SALT !== 'default-salt-change-in-production',
+});

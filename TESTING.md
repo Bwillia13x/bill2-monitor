@@ -31,11 +31,38 @@ npm run bundle:report
 
 ## Bundle Budget Enforcement
 
+### Bundle Budget Rules
+
+**All non-vendor JS chunks must be ≤ 300 KB (uncompressed)**
+
+- **Vendor chunks** (with `-vendor` suffix) are **exempt** from the 300 KB budget
+- Vendor chunks are lazy-loaded and split into separate files
+- Budget is enforced in CI via `npm run bundle:report`
+- Failing the budget check will fail the CI build
+
 ### Size Limits
 
-- **JavaScript chunks**: ≤ 300 KB (uncompressed) per chunk
-- **Total JavaScript**: No hard limit (code splitting enforced)
-- **Vendor chunks**: Exempt from limit (e.g., recharts-vendor)
+- **JavaScript chunks**: ≤ 300 KB (uncompressed) per non-vendor chunk
+- **Total JavaScript**: No hard limit (code splitting enforced via vendor chunks)
+- **Vendor chunks**: Exempt from limit (must include `-vendor` in filename)
+- **CSS, images, other assets**: Not checked against budget
+
+### Vendor Chunk Naming Convention
+
+**IMPORTANT**: For a chunk to be exempt from the 300 KB budget, it **must** include `-vendor` in the filename.
+
+This is configured in `vite.config.ts`:
+```typescript
+manualChunks: {
+  'recharts-vendor': ['recharts'],
+  'carousel-vendor': ['embla-carousel-react'],
+  'radix-vendor': ['@radix-ui/...'],
+  'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+  'data-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
+}
+```
+
+See `scripts/bundle-report.mjs` for the budget enforcement logic.
 
 ### Running Bundle Checks
 
@@ -48,6 +75,27 @@ npm run bundle:report
 npm run bundle:check
 ```
 
+### Local Repro
+
+To reproduce bundle size issues locally:
+
+```bash
+# Clean build
+rm -rf dist/
+
+# Production build
+npm run build
+
+# Check bundle report
+npm run bundle:report
+```
+
+The report will show:
+- ✅ Chunks within budget (green checkmark)
+- ❌ Chunks exceeding budget (red X)
+- File sizes in KB
+- Vendor chunk exemptions
+
 ### CI Bundle Budget
 
 In CI, bundle checks enforce:
@@ -58,11 +106,38 @@ In CI, bundle checks enforce:
 - ❌ Fails if violations found
 
 **Current Status**: Main bundle split using manual chunks:
-- `recharts-vendor`: Chart library (lazy loaded)
+- `recharts-vendor`: Chart library (lazy loaded via Methods.tsx)
 - `carousel-vendor`: Embla carousel
 - `radix-vendor`: Radix UI components
 - `react-vendor`: React core libraries
 - `data-vendor`: Supabase + React Query
+
+### How to Fix Bundle Budget Violations
+
+If a non-vendor chunk exceeds 300 KB:
+
+1. **Use dynamic imports with React.lazy():**
+   ```typescript
+   const MyComponent = lazy(() => import('./MyComponent'));
+   ```
+
+2. **Split large libraries into vendor chunks:**
+   ```typescript
+   // vite.config.ts
+   manualChunks: {
+     'mylibrary-vendor': ['large-library-name'],
+   }
+   ```
+
+3. **Use Rollup's automatic chunking:**
+   - Large dependencies are automatically split if not manually chunked
+   - Ensure tree shaking is working (check imports)
+
+4. **Analyze the chunk:**
+   ```bash
+   npm run build -- --mode development
+   # Then inspect dist/assets/ for large chunks
+   ```
 
 ### Web Vitals Testing
 

@@ -25,6 +25,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           // Split large chart library into separate chunk (lazy loaded via Methods.tsx)
+          // IMPORTANT: Vendor chunks must include '-vendor' in the name to be exempt from the 300 KB budget.
+          // See scripts/bundle-report.mjs for budget enforcement logic.
           'recharts-vendor': ['recharts'],
           // Split carousel library
           'carousel-vendor': ['embla-carousel-react'],
@@ -44,7 +46,8 @@ export default defineConfig(({ mode }) => ({
         },
       },
     },
-    // Lower chunk size warning limit to match CI budget (300 KB)
+    // Chunk size warning limit matches CI budget: 300 KB for non-vendor chunks
+    // Vendor chunks (with '-vendor' suffix) are exempt from this limit
     chunkSizeWarningLimit: 300,
   },
 }));
